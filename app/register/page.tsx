@@ -1,71 +1,25 @@
 "use client";
-
-import { FormEvent, useState } from "react";
+import { FormEvent,useEffect,useMemo,useState } from "react";
 import Link from "next/link";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
-
-export default function Register() {
-  const [fullName, setFullName] = useState("");
-  const [rollNumber, setRollNumber] = useState("");
-  const [registrationNumber, setRegistrationNumber] = useState("");
-  const [email, setEmail] = useState("");
-  const [otp, setOtp] = useState("");
-  const [step, setStep] = useState<"details" | "verify" | "done">("details");
-  const [busy, setBusy] = useState(false);
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-
-  async function requestOtp(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError(""); setMessage("");
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const { error: signUpError } = await supabase.auth.signUp({
-        email: email.trim().toLowerCase(),
-        password: crypto.randomUUID() + "Aa1!",
-        options: { data: { full_name: fullName.trim(), roll_number: rollNumber.trim(), registration_number: registrationNumber.trim() } }
-      });
-      if (signUpError) throw signUpError;
-      setStep("verify");
-      setMessage("Verification code sent if email confirmation is enabled. Check your inbox and spam folder.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Could not start registration. Please try again.");
-    } finally { setBusy(false); }
-  }
-
-  async function verifyOtp(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault(); setBusy(true); setError(""); setMessage("");
-    try {
-      const supabase = getSupabaseBrowserClient();
-      const { error: verifyError } = await supabase.auth.verifyOtp({ email: email.trim().toLowerCase(), token: otp.trim(), type: "signup" });
-      if (verifyError) throw verifyError;
-      setStep("done");
-      setMessage("Email verified. Your student account has been created.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "That code could not be verified. Check it and try again.");
-    } finally { setBusy(false); }
-  }
-
-  return <main className="auth-page"><div className="auth-orb auth-orb-one"/><div className="auth-orb auth-orb-two"/>
-    <section className="auth-card">
-      <Link href="/" className="auth-brand"><span className="auth-logo">S</span><span><b>SHIVORIX</b><small>GROWTH · VISION · SUCCESS</small></span></Link>
-      <div className="auth-progress"><span className={step === "details" ? "active" : "complete"}>1</span><i/><span className={step !== "details" ? "active" : ""}>2</span></div>
-      {step === "details" && <>
-        <span className="auth-eyebrow">YOUR JOURNEY STARTS HERE</span><h1>Create your student account</h1><p className="auth-subtitle">Enter your details carefully. We'll ask you to verify your email.</p>
-        <form className="auth-form" onSubmit={requestOtp}>
-          <label>Full name<input value={fullName} onChange={e=>setFullName(e.target.value)} autoComplete="name" placeholder="As per your college record" required maxLength={100}/></label>
-          <div className="auth-form-row"><label>Roll number<input value={rollNumber} onChange={e=>setRollNumber(e.target.value)} placeholder="Your roll number" required maxLength={50}/></label><label>Registration number<input value={registrationNumber} onChange={e=>setRegistrationNumber(e.target.value)} placeholder="Registration no." required maxLength={60}/></label></div>
-          <label>Email address<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" placeholder="you@example.com" required maxLength={254}/></label>
-          <button className="auth-submit" disabled={busy}>{busy ? "Please wait…" : "Continue to email verification"} <span>→</span></button>
-        </form>
-      </>}
-      {step === "verify" && <>
-        <span className="auth-eyebrow">CHECK YOUR INBOX</span><h1>Verify your email</h1><p className="auth-subtitle">Enter the verification code sent to <b>{email}</b>. If no code arrives, check your spam folder or contact the portal team.</p>
-        <form className="auth-form" onSubmit={verifyOtp}><label>6-digit verification code<input className="auth-otp" inputMode="numeric" autoComplete="one-time-code" pattern="[0-9]{6}" minLength={6} maxLength={6} value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,"").slice(0,6))} placeholder="000000" required/></label><button className="auth-submit" disabled={busy}>{busy ? "Verifying…" : "Verify email & create account"} <span>→</span></button><button type="button" className="auth-back" onClick={()=>{setStep("details");setOtp("");setError("");setMessage("");}}>← Edit student details</button></form>
-      </>}
-      {step === "done" && <div className="auth-success"><span>✓</span><h1>Email verified</h1><p>Your student account has been created. You can now continue to student login.</p><Link className="auth-submit auth-submit-link" href="/login">Go to student login →</Link></div>}
-      {error && <p className="auth-alert auth-error" role="alert">{error}</p>}{message && <p className="auth-alert auth-message" role="status">{message}</p>}
-      <div className="auth-switch">{step !== "done" ? <>Already registered? <Link href="/login">Sign in</Link></> : <>Need help? <a href="mailto:info.shivorix@gmail.com">Contact support</a></>}</div>
-      <footer className="auth-footer">© 2026 SHIVORIX · All rights reserved</footer>
-    </section>
-  </main>;
+type Sector={id:string;name:string;category:string|null};
+export default function Register(){
+ const [fullName,setFullName]=useState("");const [email,setEmail]=useState("");const [phone,setPhone]=useState("");const [institutionName,setInstitutionName]=useState("");const [rollNumber,setRollNumber]=useState("");const [registrationNumber,setRegistrationNumber]=useState("");const [course,setCourse]=useState("");const [academicYear,setAcademicYear]=useState("");const [currentSemester,setCurrentSemester]=useState("");const [password,setPassword]=useState("");const [confirmPassword,setConfirmPassword]=useState("");const [sectors,setSectors]=useState<Sector[]>([]);const [selectedSectors,setSelectedSectors]=useState<string[]>([]);const [sectorSearch,setSectorSearch]=useState("");const [loadingSectors,setLoadingSectors]=useState(true);const [busy,setBusy]=useState(false);const [error,setError]=useState("");const [notice,setNotice]=useState("");const [submitted,setSubmitted]=useState(false);
+ useEffect(()=>{let active=true;(async()=>{try{const supabase=getSupabaseBrowserClient();const {data,error}=await supabase.from("sectors").select("id,name,category").eq("is_active",true).order("name");if(error)throw error;if(active)setSectors((data||[]) as Sector[]);}catch(e){if(active)setError(e instanceof Error?e.message:"Could not load sectors. Refresh and try again.");}finally{if(active)setLoadingSectors(false);}})();return()=>{active=false}},[]);
+ const filteredSectors=useMemo(()=>sectors.filter(s=>s.name.toLowerCase().includes(sectorSearch.toLowerCase())),[sectors,sectorSearch]);
+ function toggleSector(name:string){setSelectedSectors(old=>old.includes(name)?old.filter(x=>x!==name):[...old,name]);}
+ async function submit(event:FormEvent<HTMLFormElement>){event.preventDefault();setBusy(true);setError("");setNotice("");if(password.length<8){setError("Password must be at least 8 characters.");setBusy(false);return;}if(password!==confirmPassword){setError("Passwords do not match.");setBusy(false);return;}if(!selectedSectors.length){setError("Please select at least one internship sector.");setBusy(false);return;}try{const supabase=getSupabaseBrowserClient();const {data,error}=await supabase.auth.signUp({email:email.trim().toLowerCase(),password,options:{data:{role:"student",full_name:fullName.trim(),phone:phone.trim(),institution_name:institutionName.trim(),roll_number:rollNumber.trim(),registration_number:registrationNumber.trim(),course:course.trim(),academic_year:academicYear,current_semester:currentSemester,sector_names:selectedSectors}}});if(error)throw error;if(!data.user)throw new Error("Registration could not be started. Please try again.");setSubmitted(true);setNotice(data.session?"Your student account is registered. Sign in with Roll Number, Registration Number and password.":"Registration submitted. Check your email for the verification link, then sign in with Roll Number, Registration Number and password.");}catch(e){setError(e instanceof Error?e.message:"Registration failed. Check your details and try again.");}finally{setBusy(false);}}
+ return <main className="auth-page"><div className="auth-orb auth-orb-one"/><div className="auth-orb auth-orb-two"/><section className="auth-card auth-card-register"><Link href="/auth" className="auth-brand"><span className="auth-logo">S</span><span><b>SHIVORIX</b><small>GROWTH · VISION · SUCCESS</small></span></Link>
+ {!submitted?<><div className="auth-progress"><span className="active">1</span><i/><span>2</span></div><span className="auth-eyebrow">STUDENT REGISTRATION</span><h1>Create your student account</h1><p className="auth-subtitle">Fill in your academic details and select the internship sectors you're interested in.</p>
+ <form className="auth-form" onSubmit={submit}>
+ <label>Full name<input value={fullName} onChange={e=>setFullName(e.target.value)} autoComplete="name" placeholder="As per your college record" required maxLength={100}/></label>
+ <div className="auth-form-row"><label>Email address<input type="email" value={email} onChange={e=>setEmail(e.target.value)} autoComplete="email" placeholder="you@example.com" required maxLength={254}/></label><label>Mobile number<input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} autoComplete="tel" placeholder="10-digit mobile number" pattern="[0-9+() -]{10,18}" required maxLength={18}/></label></div>
+ <label>College / Institution<input value={institutionName} onChange={e=>setInstitutionName(e.target.value)} placeholder="Enter your college or institution name" required maxLength={180}/></label>
+ <div className="auth-form-row"><label>Roll number<input value={rollNumber} onChange={e=>setRollNumber(e.target.value)} placeholder="Your roll number" required maxLength={50}/></label><label>Registration number<input value={registrationNumber} onChange={e=>setRegistrationNumber(e.target.value)} placeholder="Your registration number" required maxLength={60}/></label></div>
+ <div className="auth-form-row"><label>Course / Programme<input value={course} onChange={e=>setCourse(e.target.value)} placeholder="e.g. B.Tech, BCA, B.Com" required maxLength={100}/></label><label>Current year<select value={academicYear} onChange={e=>setAcademicYear(e.target.value)} required><option value="">Select year</option>{["1st Year","2nd Year","3rd Year","4th Year","5th Year","Other"].map(y=><option key={y}>{y}</option>)}</select></label></div>
+ <label>Current semester<select value={currentSemester} onChange={e=>setCurrentSemester(e.target.value)} required><option value="">Select semester</option>{[1,2,3,4,5,6,7,8,9,10].map(n=><option key={n} value={String(n)}>Semester {n}</option>)}<option value="Other">Other</option></select></label>
+ <div className="sector-picker"><div className="sector-picker-heading"><div><b>Internship sectors</b><small>Select one or more areas that interest you.</small></div><span>{selectedSectors.length} selected</span></div><input aria-label="Search sectors" value={sectorSearch} onChange={e=>setSectorSearch(e.target.value)} placeholder="Search sectors…"/>{loadingSectors?<p className="sector-hint">Loading sectors…</p>:<div className="sector-options">{filteredSectors.map(s=><label className="sector-option" key={s.id}><input type="checkbox" checked={selectedSectors.includes(s.name)} onChange={()=>toggleSector(s.name)}/><span>{s.name}</span></label>)}</div>}{!loadingSectors&&sectors.length===0&&<p className="sector-hint">Sector list could not be loaded. Refresh the page.</p>}</div>
+ <div className="auth-form-row"><label>Create password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="new-password" placeholder="At least 8 characters" minLength={8} required maxLength={128}/></label><label>Confirm password<input type="password" value={confirmPassword} onChange={e=>setConfirmPassword(e.target.value)} autoComplete="new-password" placeholder="Enter password again" minLength={8} required maxLength={128}/></label></div>
+ <button className="auth-submit" disabled={busy||loadingSectors||sectors.length===0}>{busy?"Creating account…":"Create student account"} <span>→</span></button></form></>:<div className="auth-success"><span>✓</span><h1>Registration received</h1><p>{notice}</p><Link className="auth-submit auth-submit-link" href="/login">Continue to student login →</Link></div>}
+ {error&&<p className="auth-alert auth-error" role="alert">{error}</p>}<div className="auth-switch">Already registered? <Link href="/login">Student login</Link> · <Link href="/auth">All login options</Link></div><footer className="auth-footer">© 2026 SHIVORIX · All rights reserved</footer></section></main>;
 }
