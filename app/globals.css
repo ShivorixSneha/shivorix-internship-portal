@@ -16,3 +16,33 @@
 @media(max-width:1100px){.hero{grid-template-columns:minmax(340px,.9fr) minmax(340px,1.1fr)}.logo-ring{width:min(235px,58%)}}
 @media(max-width:800px){.hero{display:flex;flex-direction:column}.art{width:100%}.logo-ring{width:min(220px,58%)}.search{width:30px;height:30px;font-size:23px}.nav-actions{gap:7px}}
 @media(max-width:390px){.search{display:none}}
+
+/* Functional, content-rich homepage sections */
+.content-section{padding:88px clamp(22px,7vw,118px);scroll-margin-top:24px}
+.section-heading{max-width:760px;margin:0 auto 38px;text-align:center}
+.section-heading>span,.contact-panel>div>span{font-size:11px;letter-spacing:2px;font-weight:850;color:#6b20c9}
+.section-heading h2,.contact-panel h2{font-size:clamp(30px,4vw,44px);line-height:1.12;letter-spacing:-1.5px;margin:13px 0;color:#171334}
+.section-heading p,.contact-panel p{font-size:16px;line-height:1.75;color:#626b86;margin:0}
+.internships-section{background:linear-gradient(180deg,#fff 0%,#faf7ff 100%)}
+.about-section{background:#fff}
+.features-section{background:#f7f3ff}
+.content-grid{display:grid;gap:18px;max-width:1180px;margin:0 auto}
+.content-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.content-grid.four{grid-template-columns:repeat(4,minmax(0,1fr))}
+.content-card{background:#fff;border:1px solid #ece4fb;border-radius:20px;padding:26px;box-shadow:0 12px 35px #28104d08;min-height:220px;display:flex;flex-direction:column;align-items:flex-start}
+.card-icon{width:46px;height:46px;border-radius:15px;background:#f0e7ff;color:#5c13c9;display:grid;place-items:center;font-size:24px;font-weight:800;margin-bottom:17px}
+.content-card h3,.about-panel h3{font-size:19px;line-height:1.3;margin:0 0 10px;color:#211344}
+.content-card p,.about-panel p{font-size:14px;line-height:1.7;color:#626b86;margin:0 0 20px}
+.content-card a{margin-top:auto;color:#5a0ec7;font-weight:800;font-size:13px;text-decoration:none}
+.content-card a:hover,.site-footer a:hover{text-decoration:underline}
+.about-panel{max-width:1080px;margin:auto;border:1px solid #e9defb;border-radius:24px;padding:clamp(25px,5vw,48px);background:radial-gradient(circle at 90% 15%,#ffead9,transparent 30%),linear-gradient(120deg,#fbf8ff,#fff);display:flex;align-items:center;justify-content:space-between;gap:28px}
+.about-panel>div{max-width:620px}.about-panel h3{font-size:clamp(23px,3vw,32px);letter-spacing:-.7px}
+.official-link{flex-shrink:0;color:#fff;background:linear-gradient(110deg,#4b00bd,#7b00c7 60%,#ff6500);padding:15px 20px;border-radius:28px;text-decoration:none;font-weight:800;font-size:13px}
+.contact-section{background:#fff;padding-top:66px;padding-bottom:76px}
+.contact-panel{max-width:1180px;margin:auto;padding:clamp(28px,5vw,54px);border-radius:26px;background:linear-gradient(115deg,#140a31,#32124d 65%,#4b00bd);display:flex;align-items:center;justify-content:space-between;gap:28px;color:#fff}
+.contact-panel>div:first-child{max-width:620px}.contact-panel h2{color:#fff}.contact-panel p{color:#e1d8f0}.contact-panel>div>span{color:#ffb46f}
+.contact-actions{display:flex;gap:12px;flex-wrap:wrap;align-items:center}.contact-actions .primary{white-space:nowrap}.contact-actions .secondary{white-space:nowrap;border-color:#cdb6ff;color:#fff;background:#ffffff12}
+.site-footer{display:flex;align-items:center;justify-content:center;gap:30px;flex-wrap:wrap;text-align:center;padding:28px 20px;background:#110a2b;color:#d9c5f5;font-size:11px;letter-spacing:1.5px}
+.site-footer a{color:#fff;text-decoration:none;letter-spacing:.2px;font-weight:700}
+@media(max-width:900px){.content-grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid.three{grid-template-columns:repeat(2,minmax(0,1fr))}.about-panel,.contact-panel{align-items:flex-start;flex-direction:column}}
+@media(max-width:560px){.content-section{padding:62px 20px}.content-grid.three,.content-grid.four{grid-template-columns:1fr}.content-card{min-height:0}.section-heading{margin-bottom:28px}.section-heading p,.contact-panel p{font-size:14px}.official-link{white-space:normal}.site-footer{gap:16px;flex-direction:column}.contact-actions{width:100%}.contact-actions a{width:100%}}
