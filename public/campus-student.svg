@@ -1,1 +1,63 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650"><defs><linearGradient id="sky" x2="0" y2="1"><stop stop-color="#d7e9ff"/><stop offset="1" stop-color="#ffd7ae"/></linearGradient><linearGradient id="sun" x2="1" y2="1"><stop stop-color="#ffba66"/><stop offset="1" stop-color="#fff2d9"/></linearGradient></defs><rect width="1000" height="650" fill="url(#sky)"/><circle cx="650" cy="230" r="150" fill="url(#sun)" opacity=".85"/><path d="M0 440 Q180 360 330 445 T700 420 T1000 430 V650 H0Z" fill="#b5c98d"/><g fill="#d9e2f0" stroke="#9eb6d3" stroke-width="5"><path d="M40 190 H340 V495 H40Z"/><path d="M75 140 H305 V190 H75Z"/><path d="M370 250 H590 V490 H370Z"/><path d="M610 180 H900 V490 H610Z"/><path d="M645 130 H860 V180 H645Z"/></g><g fill="#7fa9d1"><path d="M70 220 H125 V275 H70Z M155 220 H210 V275 H155Z M240 220 H295 V275 H240Z M70 305 H125 V360 H70Z M155 305 H210 V360 H155Z M240 305 H295 V360 H240Z M400 280 H450 V330 H400Z M485 280 H535 V330 H485Z M400 355 H450 V405 H400Z M485 355 H535 V405 H485Z M660 220 H715 V280 H660Z M745 220 H800 V280 H745Z M830 220 H885 V280 H830Z M660 310 H715 V370 H660Z M745 310 H800 V370 H745Z M830 310 H885 V370 H830Z"/></g><path d="M0 555 Q250 510 500 560 T1000 540 V650 H0Z" fill="#6e985f"/><path d="M0 610 Q300 560 600 615 T1000 595" stroke="#d4d9a4" stroke-width="28" fill="none"/><g transform="translate(735 250)"><ellipse cx="88" cy="366" rx="110" ry="23" fill="#425b58" opacity=".25"/><path d="M52 120 Q22 145 15 230 L0 354 H177 L160 215 Q151 148 119 120Z" fill="#272448"/><path d="M46 124 Q80 155 120 124 L144 230 L29 230Z" fill="#372c62"/><ellipse cx="83" cy="70" rx="42" ry="51" fill="#9b5e40"/><path d="M42 65 Q25 20 62 12 Q113 -5 126 46 L120 63 Q99 39 76 42 Q59 42 42 65Z" fill="#211c2b"/><path d="M5 182 Q-10 230 12 285 L42 280 L52 207Z" fill="#292348"/><path d="M142 181 Q172 230 165 292 L143 293 L126 215Z" fill="#292348"/><path d="M24 166 Q3 155 -5 195 L0 296 Q6 323 30 311 L50 220Z" fill="#f36b13" stroke="#40215d" stroke-width="8"/><path d="M35 178 Q16 188 21 220 L30 294" stroke="#9b83be" stroke-width="7" fill="none"/><rect x="50" y="318" width="33" height="72" rx="13" fill="#22203a"/><rect x="108" y="318" width="33" height="72" rx="13" fill="#22203a"/><path d="M48 385 H87 V398 H38 Q30 392 48 385 M107 385 H143 L158 398 H104Z" fill="#171729"/></g><g fill="#527a4b"><circle cx="35" cy="390" r="80"/><circle cx="960" cy="390" r="90"/><circle cx="555" cy="415" r="55"/></g><g fill="#739c63"><circle cx="35" cy="350" r="55"/><circle cx="960" cy="345" r="62"/><circle cx="555" cy="382" r="38"/></g><rect width="1000" height="650" fill="#fff" opacity=".13"/></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 650">
+<defs>
+ <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#b9d9ff"/><stop offset=".48" stop-color="#f7d9d0"/><stop offset="1" stop-color="#ffd39a"/></linearGradient>
+ <linearGradient id="glass" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#b6d7ee"/><stop offset="1" stop-color="#547ba4"/></linearGradient>
+ <linearGradient id="building" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fffaf2"/><stop offset="1" stop-color="#c5d0e2"/></linearGradient>
+ <linearGradient id="jacket" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#29213f"/><stop offset="1" stop-color="#090e27"/></linearGradient>
+ <linearGradient id="bag" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#ff8a24"/><stop offset="1" stop-color="#c84a0d"/></linearGradient>
+ <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#7d9c78"/><stop offset="1" stop-color="#354f55"/></linearGradient>
+ <filter id="blur"><feGaussianBlur stdDeviation="18"/></filter>
+</defs>
+<rect width="1000" height="650" fill="url(#sky)"/>
+<circle cx="690" cy="190" r="128" fill="#fff1c8" opacity=".8"/>
+<circle cx="690" cy="190" r="170" fill="#ffdf9c" opacity=".24" filter="url(#blur)"/>
+<!-- distant campus wings -->
+<g opacity=".62" fill="#e8e5e5"><path d="M0 260 150 195 300 260V455H0Z"/><path d="M300 240 430 180 570 245V460H300Z"/></g>
+<g fill="url(#building)" stroke="#aebed0" stroke-width="4">
+ <path d="M20 205H320V475H20Z"/><path d="M0 183H340V211H0Z"/><path d="M45 155H295V184H45Z"/>
+ <path d="M320 270H570V470H320Z"/><path d="M300 248H590V276H300Z"/>
+ <path d="M600 215H940V480H600Z"/><path d="M575 192H965V221H575Z"/><path d="M645 163H900V192H645Z"/>
+</g>
+<g fill="url(#glass)" stroke="#f6f0e9" stroke-width="8">
+ <path d="M48 230H103V290H48Z M125 230H180V290H125Z M202 230H257V290H202Z"/>
+ <path d="M48 316H103V376H48Z M125 316H180V376H125Z M202 316H257V376H202Z"/>
+ <path d="M345 297H390V350H345Z M415 297H460V350H415Z M485 297H530V350H485Z"/>
+ <path d="M345 375H390V428H345Z M415 375H460V428H415Z M485 375H530V428H485Z"/>
+ <path d="M635 244H695V310H635Z M725 244H785V310H725Z M815 244H875V310H815Z"/>
+ <path d="M635 334H695V400H635Z M725 334H785V400H725Z M815 334H875V400H815Z"/>
+</g>
+<path d="M0 465Q180 423 340 470T680 458T1000 455V650H0Z" fill="url(#ground)"/>
+<path d="M330 650 500 455 650 455 820 650Z" fill="#c9c7b3" opacity=".7"/>
+<path d="M490 650 560 455" stroke="#f4e8c9" stroke-width="5" opacity=".8"/>
+<!-- landscaping -->
+<g><g fill="#385f52"><circle cx="50" cy="405" r="85"/><circle cx="100" cy="375" r="75"/><circle cx="555" cy="420" r="65"/><circle cx="955" cy="390" r="105"/><circle cx="900" cy="360" r="75"/></g><g fill="#60866b"><circle cx="35" cy="370" r="60"/><circle cx="112" cy="340" r="55"/><circle cx="555" cy="390" r="45"/><circle cx="955" cy="345" r="76"/><circle cx="900" cy="330" r="54"/></g></g>
+<!-- student seen from behind -->
+<g transform="translate(720 190)">
+ <ellipse cx="105" cy="414" rx="120" ry="20" fill="#152536" opacity=".28"/>
+ <!-- legs -->
+ <path d="M65 306 52 405Q55 426 78 426L102 329Z" fill="#20253c"/>
+ <path d="M125 305 143 403Q151 424 171 415L158 300Z" fill="#25283f"/>
+ <path d="M55 408 82 408 89 429 39 434Q29 427 55 408Z" fill="#151b2c"/>
+ <path d="M143 402 170 397 193 421 151 428Z" fill="#151b2c"/>
+ <!-- body -->
+ <path d="M54 133Q28 152 21 209L9 319Q49 346 143 330L170 220Q163 160 135 136Z" fill="url(#jacket)"/>
+ <path d="M57 140Q94 171 135 140L151 219 37 219Z" fill="#373050"/>
+ <path d="M52 145Q24 160 17 208L0 278Q3 299 27 302L55 222Z" fill="#25243d"/>
+ <path d="M137 148Q165 165 173 214L183 278Q183 298 161 300L138 222Z" fill="#1c2038"/>
+ <!-- neck/head -->
+ <path d="M77 107H119V151Q99 172 77 150Z" fill="#a86d4e"/>
+ <ellipse cx="99" cy="73" rx="44" ry="54" fill="#b87856"/>
+ <path d="M55 70Q40 22 77 5Q119 -9 143 29L143 69Q123 42 102 39Q78 38 55 70Z" fill="#1b1b2a"/>
+ <path d="M55 57Q53 95 69 110L62 73Z" fill="#282034"/>
+ <!-- backpack -->
+ <path d="M20 163Q17 143 39 145L75 157Q92 172 90 219L80 290Q58 308 27 289L13 223Q8 187 20 163Z" fill="url(#bag)" stroke="#57284a" stroke-width="7"/>
+ <path d="M29 166Q47 177 61 173L68 285" fill="none" stroke="#ffb65f" stroke-width="7"/>
+ <path d="M23 220Q47 232 83 222L80 256Q49 267 20 252Z" fill="#df5b12" stroke="#853a21" stroke-width="5"/>
+ <path d="M41 180 48 204" stroke="#ffe1a3" stroke-width="5" stroke-linecap="round"/>
+ <path d="M73 155Q87 180 86 215" fill="none" stroke="#9c3b1b" stroke-width="7"/>
+ <!-- jacket seams -->
+ <path d="M95 166 97 318M41 229 28 280M141 226 154 279" fill="none" stroke="#55506a" stroke-width="4" opacity=".75"/>
+</g>
+<!-- warm atmospheric wash -->
+<rect width="1000" height="650" fill="#fff3e4" opacity=".08"/>
+</svg>
