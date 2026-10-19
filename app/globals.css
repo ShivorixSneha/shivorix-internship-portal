@@ -46,3 +46,21 @@
 .site-footer a{color:#fff;text-decoration:none;letter-spacing:.2px;font-weight:700}
 @media(max-width:900px){.content-grid.four{grid-template-columns:repeat(2,minmax(0,1fr))}.content-grid.three{grid-template-columns:repeat(2,minmax(0,1fr))}.about-panel,.contact-panel{align-items:flex-start;flex-direction:column}}
 @media(max-width:560px){.content-section{padding:62px 20px}.content-grid.three,.content-grid.four{grid-template-columns:1fr}.content-card{min-height:0}.section-heading{margin-bottom:28px}.section-heading p,.contact-panel p{font-size:14px}.official-link{white-space:normal}.site-footer{gap:16px;flex-direction:column}.contact-actions{width:100%}.contact-actions a{width:100%}}
+
+
+/* Clearer internship journey cards */
+.journey-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:22px;max-width:1180px;margin:0 auto}
+.journey-card{position:relative;overflow:hidden;background:#fff;border:1px solid #e8e0f6;border-radius:24px;padding:28px;min-height:300px;display:flex;flex-direction:column;align-items:flex-start;box-shadow:0 14px 38px #28104d09;transition:transform .2s ease,box-shadow .2s ease}
+.journey-card:hover{transform:translateY(-4px);box-shadow:0 20px 45px #28104d13}
+.journey-card:before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#5b13c9,#ff6500)}
+.journey-featured{background:linear-gradient(145deg,#f7f1ff,#fff 70%);border-color:#d9c6fa}
+.journey-top{display:flex;align-items:center;justify-content:space-between;width:100%;margin-bottom:24px}
+.journey-number{font-size:13px;letter-spacing:1.5px;font-weight:900;color:#a69ab9}
+.journey-icon{width:52px;height:52px;display:grid;place-items:center;border-radius:17px;background:#f0e7ff;color:#5b13c9;font-size:27px;font-weight:800}
+.journey-tag{font-size:10px;letter-spacing:2px;font-weight:900;color:#7b36ce;margin-bottom:9px}
+.journey-card h3{font-size:22px;letter-spacing:-.6px;line-height:1.25;margin:0 0 12px;color:#211344}
+.journey-card p{font-size:14px;line-height:1.75;color:#626b86;margin:0 0 24px}
+.journey-link{display:flex;align-items:center;justify-content:space-between;gap:16px;width:100%;margin-top:auto;padding-top:16px;border-top:1px solid #eee7f8;text-decoration:none;color:#5510bf;font-size:13px;font-weight:850}
+.journey-link b{font-size:18px;color:#ff6500}
+@media(max-width:900px){.journey-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.journey-grid{grid-template-columns:1fr}.journey-card{min-height:260px;padding:24px}}
