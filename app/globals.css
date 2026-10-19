@@ -84,3 +84,15 @@
 .domain-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px;max-width:1100px;margin:auto}.domain-card{padding:25px;border:1px solid #e9e1f5;border-radius:20px;background:#fff;box-shadow:0 10px 30px #28104d06}.domain-card>span{color:#ff6500;font-size:12px;font-weight:900;letter-spacing:1.5px}.domain-card h3{margin:18px 0 8px;font-size:18px;color:#251747}.domain-card p{margin:0;color:#68708a;font-size:13px;line-height:1.7}
 .opportunities-footer{display:flex;justify-content:space-between;align-items:center;gap:20px;flex-wrap:wrap;padding:26px clamp(22px,7vw,110px);background:#110a2b;color:#d9c5f5;font-size:10px;letter-spacing:1.4px}.opportunities-footer a{font-size:12px;letter-spacing:0;color:#fff;text-decoration:none;font-weight:700}
 @media(max-width:650px){.opportunities-nav{height:auto;min-height:76px;flex-wrap:wrap;padding:14px 18px}.opportunities-nav nav{width:100%;justify-content:flex-end;gap:18px}.opportunities-hero{padding:58px 22px}.opportunities-hero h1{letter-spacing:-1.7px}.domain-section{padding:52px 20px 60px}.domain-grid{grid-template-columns:1fr}.opportunities-footer{flex-direction:column;text-align:center}}
+
+
+/* Contact details and legal footer */
+.contact-details{display:flex;gap:14px;flex-wrap:wrap;margin-top:24px}
+.contact-details>a{display:flex;align-items:center;gap:12px;min-width:235px;padding:14px 16px;border:1px solid #ffffff30;border-radius:15px;background:#ffffff0d;color:#fff;text-decoration:none;transition:background .2s ease}
+.contact-details>a:hover{background:#ffffff18}
+.contact-detail-icon{display:grid;place-items:center;width:40px;height:40px;flex:0 0 40px;border-radius:12px;background:#ffffff18;color:#ffbd83;font-size:20px}
+.contact-details small,.contact-details b{display:block}.contact-details small{font-size:9px;letter-spacing:1.5px;color:#ffbd83;font-weight:850;margin-bottom:5px}.contact-details b{font-size:13px;overflow-wrap:anywhere}
+.footer-legal{width:100%;display:flex;justify-content:center;gap:12px 28px;flex-wrap:wrap;padding-top:17px;border-top:1px solid #ffffff20;color:#cbbbe3;font-size:11px;letter-spacing:.2px}
+.opportunities-contact{display:flex;gap:16px;flex-wrap:wrap;align-items:center}.opportunities-contact a{color:#fff;text-decoration:none;font-size:12px;letter-spacing:0;font-weight:650}.opportunities-contact a:hover{text-decoration:underline}
+.opportunities-legal{width:100%;display:flex;justify-content:center;gap:12px 28px;flex-wrap:wrap;padding-top:17px;border-top:1px solid #ffffff20;color:#cbbbe3;font-size:11px;letter-spacing:.2px}
+@media(max-width:560px){.contact-details{width:100%}.contact-details>a{width:100%;min-width:0}.footer-legal,.opportunities-legal{flex-direction:column;align-items:center;gap:8px}.opportunities-contact{flex-direction:column;gap:10px}}
