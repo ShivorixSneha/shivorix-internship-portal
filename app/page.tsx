@@ -21,6 +21,11 @@ export default function Home(){return <main className="page"><header className="
   </div>
 </section>
 <section className="content-section contact-section" id="contact">
-  <div className="contact-panel"><div><span>CONTACT & NEXT STEPS</span><h2>Ready to begin?</h2><p>Register as a student, sign in to your account, or visit the SHIVORIX website to learn more.</p></div><div className="contact-actions"><Link className="primary" href="/register">Register now ↗</Link><a className="secondary" href="https://www.shivorixai.com/home" target="_blank" rel="noreferrer">shivorixai.com ↗</a></div></div>
+  <div className="contact-panel"><div><span>CONTACT & NEXT STEPS</span><h2>Ready to begin?</h2><p>Have a question about SHIVORIX or the internship portal? Contact us directly—we're happy to help.</p>
+    <div className="contact-details">
+      <a href="mailto:info.shivorix@gmail.com"><span className="contact-detail-icon">✉</span><span><small>EMAIL US</small><b>info.shivorix@gmail.com</b></span></a>
+      <a href="https://wa.me/917654086807" target="_blank" rel="noreferrer"><span className="contact-detail-icon">◉</span><span><small>WHATSAPP</small><b>+91 76540 86807</b></span></a>
+    </div>
+  </div><div className="contact-actions"><Link className="primary" href="/register">Register now ↗</Link><a className="secondary" href="https://www.shivorixai.com/home" target="_blank" rel="noreferrer">Official website ↗</a></div></div>
 </section>
-<footer className="site-footer"><span>SHIVORIX · GROWTH · VISION · SUCCESS</span><a href="https://www.shivorixai.com/home" target="_blank" rel="noreferrer">Official website ↗</a><a href="#home">Back to top ↑</a></footer></main>}
+<footer className="site-footer"><span>SHIVORIX · GROWTH · VISION · SUCCESS</span><a href="https://www.shivorixai.com/home" target="_blank" rel="noreferrer">Official website ↗</a><a href="#home">Back to top ↑</a><div className="footer-legal"><span>© 2026 SHIVORIX. All rights reserved.</span><span>Founder: Sneha Gupta</span></div></footer></main>}
