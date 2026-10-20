@@ -136,3 +136,41 @@ a{color:inherit}
 .auth-success{padding-top:8px}
 @media(min-width:900px){.auth-card-register .auth-form{gap:20px}.auth-card-register .sector-options{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:560px){.auth-page{padding:16px 11px}.auth-card-login,.auth-card-register{padding:25px 19px;border-radius:22px}.auth-brand .auth-logo-image{width:50px!important;height:50px!important;min-width:50px!important;max-width:50px!important;min-height:50px!important;max-height:50px!important;flex-basis:50px!important}.auth-card h1{font-size:29px}.sector-options{grid-template-columns:1fr}.auth-submit{min-height:50px}}
+
+
+/* Split-panel, premium SHIVORIX student authentication */
+.auth-card-login,.auth-card-register{display:grid!important;grid-template-columns:minmax(265px,.78fr) minmax(0,1fr);gap:0!important;width:min(1080px,100%)!important;padding:0!important;overflow:hidden!important;border-radius:28px!important;background:#fff!important;box-shadow:0 32px 100px rgba(42,17,72,.15)!important}
+.auth-card-login{max-width:1000px!important;min-height:640px}
+.auth-card-register{max-width:1160px!important;grid-template-columns:minmax(265px,.7fr) minmax(0,1.3fr)!important}
+.auth-visual-panel{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;min-width:0;padding:clamp(26px,3.5vw,46px);background:linear-gradient(150deg,#32105f 0%,#4f1595 48%,#702cc0 100%);color:#fff}
+.auth-visual-panel:before{content:"";position:absolute;z-index:-1;inset:0;background:radial-gradient(circle at 90% 15%,rgba(255,137,71,.24),transparent 33%),radial-gradient(circle at 8% 88%,rgba(179,133,255,.25),transparent 38%)}
+.auth-visual-logo{display:flex;align-items:center;justify-content:center;width:88px;height:88px;max-width:88px;max-height:88px;flex:0 0 88px;border-radius:23px;background:#fff;padding:8px;box-shadow:0 12px 30px #18062c30}
+.auth-visual-logo img{display:block!important;width:100%!important;height:100%!important;max-width:100%!important;max-height:100%!important;min-width:0!important;min-height:0!important;object-fit:contain!important;object-position:center;border-radius:14px}
+.auth-visual-kicker{display:block;margin-top:42px;color:#ffc28f;font-size:9px;font-weight:900;letter-spacing:2px;line-height:1.6}
+.auth-visual-panel h2{margin:14px 0 14px;color:#fff;font-size:clamp(30px,3.3vw,43px);font-weight:850;line-height:1.08;letter-spacing:-1.7px}
+.auth-visual-panel h2 em{font-style:normal;color:#ffb17d}
+.auth-visual-panel>p{max-width:340px;margin:0;color:#e5d8f5;font-size:12px;line-height:1.9}
+.auth-visual-list{display:grid;gap:12px;margin-top:30px}
+.auth-visual-list span{display:flex;align-items:center;gap:10px;color:#f8f1ff;font-size:10px;line-height:1.5;font-weight:700}
+.auth-visual-list b{display:grid;place-items:center;width:27px;height:27px;flex:0 0 27px;border:1px solid #ffffff38;border-radius:9px;color:#ffc28f;font-size:9px}
+.auth-visual-decoration{position:absolute;z-index:-1;width:290px;height:290px;right:-170px;bottom:-130px;border:1px solid #ffffff24;border-radius:50%;box-shadow:0 0 0 28px #ffffff08,0 0 0 60px #ffffff05;pointer-events:none}
+.auth-main-content{min-width:0;width:100%;padding:clamp(25px,4vw,48px);align-self:center}
+.auth-main-content>.auth-brand .auth-logo-image{display:block!important;width:48px!important;height:48px!important;min-width:48px!important;max-width:48px!important;min-height:48px!important;max-height:48px!important;flex:0 0 48px!important;object-fit:contain!important}
+.auth-main-content .auth-progress{margin:24px 0 20px}
+.auth-main-content .auth-card h1,.auth-main-content h1{font-size:clamp(28px,3vw,36px);letter-spacing:-1.1px}
+.auth-main-content .auth-subtitle{font-size:13px;line-height:1.75;margin-bottom:22px}
+.auth-main-content .auth-form{gap:15px}
+.auth-main-content .auth-form label{font-size:11px;gap:7px}
+.auth-main-content .auth-form input,.auth-main-content .auth-form select{min-height:45px;padding:12px 13px;border-radius:11px;font-size:13px}
+.auth-main-content .auth-submit{min-height:49px;margin-top:5px;border-radius:12px}
+.auth-main-content .auth-switch{margin-top:19px;padding-top:16px}
+.auth-main-content .auth-footer{margin-top:18px}
+.auth-card-register .auth-main-content{padding:clamp(22px,3vw,38px)}
+.auth-card-register .auth-main-content .auth-brand{margin-bottom:0}
+.auth-card-register .auth-main-content .auth-progress{margin:18px 0}
+.auth-card-register .auth-main-content .auth-form{gap:13px}
+.auth-card-register .auth-main-content .auth-form-row{gap:12px}
+.auth-card-register .auth-main-content .sector-picker{padding:13px}
+.auth-card-register .auth-main-content .sector-options{max-height:190px}
+@media(max-width:800px){.auth-card-login,.auth-card-register{grid-template-columns:1fr!important;width:min(650px,100%)!important}.auth-visual-panel{display:none}.auth-card-login{min-height:0}.auth-card-register .auth-main-content{padding:clamp(23px,5vw,36px)}}
+@media(max-width:520px){.auth-card-login,.auth-card-register{border-radius:22px!important}.auth-main-content{padding:24px 20px!important}.auth-main-content .auth-form-row{grid-template-columns:1fr}.auth-card-register .auth-main-content .sector-options{grid-template-columns:1fr;max-height:220px}}
