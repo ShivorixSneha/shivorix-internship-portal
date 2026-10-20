@@ -71,3 +71,33 @@ a{color:inherit}
 .auth-logo-image{display:block;width:54px;height:54px;object-fit:contain;border-radius:15px;flex:0 0 54px;box-shadow:0 8px 20px #6b21a829}
 .sector-option input[type="radio"]{width:16px!important;height:16px;flex:0 0 16px;margin:1px 0 0;accent-color:#6420bd}
 .sector-picker-heading small{max-width:360px}
+
+
+/* Branded staff workspace sign-in */
+.staff-auth-page{background:radial-gradient(ellipse at 4% 8%,#e9dcff 0,transparent 32%),radial-gradient(ellipse at 96% 92%,#ffe3d1 0,transparent 30%),#faf8ff}
+.staff-login-card{width:min(1040px,100%);padding:0;display:grid;grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);overflow:hidden;border:1px solid #e6dcf2;border-radius:28px;background:#fff;box-shadow:0 30px 100px #2b145219}
+.staff-login-visual{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;justify-content:center;min-height:570px;padding:clamp(28px,4vw,52px);background:linear-gradient(145deg,#351064 0%,#5720a3 55%,#7c2fc1 100%);color:#fff}
+.staff-visual-brand{display:flex;align-items:center;gap:12px;color:#fff;text-decoration:none;position:relative;z-index:1}
+.staff-visual-brand img{width:54px;height:54px;object-fit:contain;border-radius:16px;background:#fff;padding:4px}
+.staff-visual-brand>span{font-size:17px;font-weight:900;letter-spacing:1.5px}
+.staff-visual-brand small{display:block;margin-top:5px;font-size:8px;letter-spacing:1.2px;color:#f5bd95}
+.staff-visual-kicker{position:relative;z-index:1;margin-top:66px;color:#efb68b;font-size:10px;font-weight:900;letter-spacing:2px}
+.staff-login-visual h2{position:relative;z-index:1;max-width:390px;margin:16px 0;font-size:clamp(32px,3.5vw,44px);line-height:1.08;letter-spacing:-1.8px}
+.staff-login-visual h2 em{font-style:normal;color:#ffb17a}
+.staff-login-visual>p{position:relative;z-index:1;max-width:365px;margin:0;color:#e2d4f2;font-size:13px;line-height:1.9}
+.staff-visual-points{position:relative;z-index:1;display:grid;gap:13px;margin-top:35px}
+.staff-visual-points span{display:flex;align-items:center;gap:12px;color:#f6efff;font-size:11px;font-weight:700}
+.staff-visual-points b{display:grid;place-items:center;width:30px;height:30px;border:1px solid #ffffff38;border-radius:10px;color:#ffc08d;font-size:9px}
+.staff-visual-orbit{position:absolute;z-index:-1;border:1px solid #ffffff20;border-radius:50%;pointer-events:none}
+.staff-visual-orbit-a{width:330px;height:330px;right:-160px;top:60px;box-shadow:0 0 0 34px #ffffff08,0 0 0 70px #ffffff05}
+.staff-visual-orbit-b{width:220px;height:220px;left:-145px;bottom:-110px;box-shadow:0 0 0 28px #ffffff08}
+.staff-login-content{min-width:0;align-self:center;padding:clamp(28px,4vw,54px)}
+.staff-login-content h1{margin:0 0 12px;font-size:clamp(30px,3.4vw,40px);line-height:1.1;letter-spacing:-1.5px;color:#21143a}
+.staff-login-content .auth-subtitle{margin-bottom:30px}
+.staff-login-content .auth-form{gap:20px}
+.staff-login-content .auth-submit{margin-top:8px;min-height:54px}
+.staff-login-content .auth-switch{margin-top:26px}
+.staff-login-content .auth-footer{margin-top:25px}
+.staff-mobile-brand{display:none}
+@media(max-width:760px){.staff-login-card{width:min(520px,100%);grid-template-columns:1fr}.staff-login-visual{display:none}.staff-login-content{padding:clamp(25px,6vw,38px)}.staff-mobile-brand{display:inline-flex;margin-bottom:30px}.staff-login-content .auth-eyebrow{margin-bottom:12px}}
+@media(max-width:520px){.staff-login-card{border-radius:22px}.staff-login-content{padding:24px 20px}}
