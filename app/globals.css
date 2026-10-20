@@ -218,3 +218,17 @@ a{color:inherit}
  .auth-card-register .auth-visual-panel .auth-visual-list span{color:#fff!important}
  .auth-card-register .auth-visual-panel .auth-visual-list b{color:#ffd0a8!important}
 }
+
+
+/* Restore the requested single-card auth layout; remove the unrequested split-screen panels */
+.auth-card-login,.auth-card-register{display:block!important;grid-template-columns:none!important;overflow:visible!important}
+.auth-card-login{width:min(560px,100%)!important;max-width:560px!important;padding:clamp(27px,4.5vw,44px)!important;min-height:0!important}
+.auth-card-register{width:min(920px,94vw)!important;max-width:920px!important;padding:clamp(26px,3.5vw,42px)!important}
+.auth-visual-panel{display:none!important}
+.auth-main-content{width:100%!important;max-width:none!important;padding:0!important}
+.auth-card-register .auth-main-content{padding:0!important}
+@media(min-width:801px){
+ .auth-card-register .auth-main-content .auth-form{gap:18px}
+ .auth-card-register .auth-main-content .auth-form input,.auth-card-register .auth-main-content .auth-form select{min-height:48px;font-size:14px}
+ .auth-card-register .auth-main-content .sector-options{max-height:260px}
+}
