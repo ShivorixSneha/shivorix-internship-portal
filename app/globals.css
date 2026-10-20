@@ -205,3 +205,16 @@ a{color:inherit}
  .auth-card-register .auth-main-content .sector-option{min-height:48px;padding:12px;font-size:13px}
  .auth-card-register .auth-main-content .auth-submit{min-height:54px;font-size:15px}
 }
+
+
+/* Fix registration brand panel: keep its content visible and anchored from the top */
+@media(min-width:801px){
+ .auth-card-register .auth-visual-panel{justify-content:flex-start!important;align-items:flex-start!important;padding-top:clamp(54px,7vh,88px)!important;gap:0!important;min-height:760px!important}
+ .auth-card-register .auth-visual-panel>.auth-visual-logo{position:relative!important;z-index:2!important;display:flex!important;margin:0 0 38px!important;flex:0 0 100px!important}
+ .auth-card-register .auth-visual-panel>.auth-visual-kicker{position:relative!important;z-index:2!important;margin:0 0 12px!important;opacity:1!important;visibility:visible!important}
+ .auth-card-register .auth-visual-panel>h2{position:relative!important;z-index:2!important;display:block!important;visibility:visible!important;opacity:1!important;margin:0 0 18px!important;color:#fff!important}
+ .auth-card-register .auth-visual-panel>p{position:relative!important;z-index:2!important;display:block!important;visibility:visible!important;opacity:1!important;color:#f2e8ff!important}
+ .auth-card-register .auth-visual-panel>.auth-visual-list{position:relative!important;z-index:2!important;display:grid!important;visibility:visible!important;opacity:1!important;margin-top:34px!important}
+ .auth-card-register .auth-visual-panel .auth-visual-list span{color:#fff!important}
+ .auth-card-register .auth-visual-panel .auth-visual-list b{color:#ffd0a8!important}
+}
