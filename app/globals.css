@@ -174,3 +174,34 @@ a{color:inherit}
 .auth-card-register .auth-main-content .sector-options{max-height:190px}
 @media(max-width:800px){.auth-card-login,.auth-card-register{grid-template-columns:1fr!important;width:min(650px,100%)!important}.auth-visual-panel{display:none}.auth-card-login{min-height:0}.auth-card-register .auth-main-content{padding:clamp(23px,5vw,36px)}}
 @media(max-width:520px){.auth-card-login,.auth-card-register{border-radius:22px!important}.auth-main-content{padding:24px 20px!important}.auth-main-content .auth-form-row{grid-template-columns:1fr}.auth-card-register .auth-main-content .sector-options{grid-template-columns:1fr;max-height:220px}}
+
+
+/* Registration: use the desktop viewport generously and keep every field readable */
+@media(min-width:801px){
+ .auth-page:has(.auth-card-register){min-height:100vh;padding:28px 3vw;align-items:center}
+ .auth-card-register{width:94vw!important;max-width:1500px!important;grid-template-columns:minmax(300px,.72fr) minmax(0,1.28fr)!important}
+ .auth-card-register .auth-visual-panel{min-height:760px;padding:clamp(34px,3.2vw,58px)}
+ .auth-card-register .auth-visual-logo{width:100px;height:100px;max-width:100px;max-height:100px;flex-basis:100px}
+ .auth-card-register .auth-visual-kicker{margin-top:48px;font-size:11px}
+ .auth-card-register .auth-visual-panel h2{font-size:clamp(38px,3.1vw,54px);line-height:1.08}
+ .auth-card-register .auth-visual-panel>p{font-size:15px;line-height:1.85}
+ .auth-card-register .auth-visual-list{gap:16px;margin-top:38px}
+ .auth-card-register .auth-visual-list span{font-size:13px}
+ .auth-card-register .auth-visual-list b{width:34px;height:34px;flex-basis:34px;font-size:11px}
+ .auth-card-register .auth-main-content{padding:clamp(30px,3.2vw,54px)!important}
+ .auth-card-register .auth-main-content>.auth-brand .auth-logo-image{width:56px!important;height:56px!important;min-width:56px!important;max-width:56px!important;min-height:56px!important;max-height:56px!important;flex-basis:56px!important}
+ .auth-card-register .auth-main-content .auth-progress{margin:24px 0}
+ .auth-card-register .auth-main-content h1{font-size:clamp(32px,2.5vw,42px);margin:8px 0 12px}
+ .auth-card-register .auth-main-content .auth-subtitle{font-size:15px;margin-bottom:26px}
+ .auth-card-register .auth-main-content .auth-form{gap:18px}
+ .auth-card-register .auth-main-content .auth-form label{font-size:13px;gap:8px}
+ .auth-card-register .auth-main-content .auth-form input,.auth-card-register .auth-main-content .auth-form select{min-height:50px;padding:13px 15px;font-size:15px;border-radius:12px}
+ .auth-card-register .auth-main-content .auth-form-row{gap:18px}
+ .auth-card-register .auth-main-content .sector-picker{padding:18px}
+ .auth-card-register .auth-main-content .sector-picker-heading b{font-size:15px}
+ .auth-card-register .auth-main-content .sector-picker-heading small{font-size:12px}
+ .auth-card-register .auth-main-content .sector-picker>input{min-height:48px}
+ .auth-card-register .auth-main-content .sector-options{max-height:300px;gap:10px}
+ .auth-card-register .auth-main-content .sector-option{min-height:48px;padding:12px;font-size:13px}
+ .auth-card-register .auth-main-content .auth-submit{min-height:54px;font-size:15px}
+}
