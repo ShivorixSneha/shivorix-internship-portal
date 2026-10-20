@@ -360,3 +360,34 @@ a{color:inherit}
  .auth-card-register .auth-main-content .sector-options{grid-template-columns:1fr!important;max-height:230px!important}
  .staff-login-content .auth-brand{margin-bottom:22px!important}
 }
+
+
+/* Final polish after live-page review: remove the white logo pill and restore visual balance */
+.auth-visual-panel>.auth-visual-logo{
+  width:88px!important;height:88px!important;max-width:88px!important;max-height:88px!important;
+  flex:0 0 88px!important;padding:0!important;margin:0 0 38px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  background:transparent!important;border:0!important;border-radius:50%!important;
+  box-shadow:none!important;overflow:hidden!important;
+}
+.auth-visual-panel>.auth-visual-logo img{
+  display:block!important;width:88px!important;height:88px!important;
+  min-width:88px!important;min-height:88px!important;max-width:88px!important;max-height:88px!important;
+  object-fit:contain!important;object-position:center!important;border-radius:50%!important;
+  background:transparent!important;padding:0!important;filter:drop-shadow(0 5px 14px #0004)!important;
+}
+.auth-card-register .auth-visual-panel>.auth-visual-logo{margin-bottom:34px!important}
+.auth-main-content>.auth-brand{gap:12px!important;margin-bottom:0!important}
+.auth-main-content>.auth-brand .auth-logo-image{border-radius:50%!important;background:transparent!important}
+.auth-card-login .auth-main-content{max-width:610px!important;margin-inline:auto!important}
+.auth-card-register .auth-main-content{max-width:900px!important;margin-inline:auto!important}
+.auth-card-register .auth-main-content .auth-form-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+.auth-card-register .auth-main-content .auth-form>label,
+.auth-card-register .auth-main-content .auth-form-row>label{min-width:0!important}
+.auth-card-register .auth-main-content .auth-form input,
+.auth-card-register .auth-main-content .auth-form select{width:100%!important;box-sizing:border-box!important}
+@media(max-width:760px){
+ .auth-visual-panel>.auth-visual-logo{width:64px!important;height:64px!important;max-width:64px!important;max-height:64px!important;flex-basis:64px!important;margin-bottom:20px!important}
+ .auth-visual-panel>.auth-visual-logo img{width:64px!important;height:64px!important;min-width:64px!important;min-height:64px!important;max-width:64px!important;max-height:64px!important}
+ .auth-card-register .auth-main-content .auth-form-row{grid-template-columns:1fr!important}
+}
