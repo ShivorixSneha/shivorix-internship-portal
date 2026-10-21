@@ -192,3 +192,17 @@
 .portal-table th, .portal-table td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--portal-border, #e9e7f1); font-size: 14px; }
 .portal-table th { color: var(--portal-ink, #24213b); background: var(--portal-soft, #f7f5fc); font-weight: 700; }
 .portal-table td { color: var(--portal-muted, #55556a); }
+
+
+/* Student-specific, print-ready document generation */
+.portal-generated-docs { margin: 18px 0 22px; }
+.portal-generated-docs-intro { padding: 18px 20px; border: 1px solid var(--portal-border, #e8e3f1); border-radius: 14px; background: linear-gradient(135deg, #fffaf5, #f8f5ff); }
+.portal-generated-docs-intro strong { display: block; color: var(--portal-ink, #28213d); font-size: 16px; }
+.portal-generated-docs-intro p, .portal-generated-doc-card p, .portal-generated-docs-note { color: var(--portal-muted, #6a647a); font-size: 13px; line-height: 1.55; margin: 6px 0 0; }
+.portal-generated-docs-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 12px; }
+.portal-generated-doc-card { display: grid; grid-template-columns: 42px minmax(0,1fr); align-items: start; gap: 10px; padding: 16px; border: 1px solid var(--portal-border, #e8e3f1); border-radius: 13px; background: #fff; box-shadow: 0 5px 18px rgba(53, 30, 93, .04); }
+.portal-generated-doc-icon { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; color: #5c249d; background: #f1e9ff; }
+.portal-generated-doc-card strong { display: block; color: var(--portal-ink, #28213d); font-size: 14px; }
+.portal-generated-doc-card button { grid-column: 2; justify-self: start; margin-top: 5px; padding: 9px 12px; border: 0; border-radius: 8px; color: #fff; background: linear-gradient(100deg, #f47a20, #6a2db8); font-size: 12px; font-weight: 700; cursor: pointer; }
+.portal-generated-docs-note { padding: 10px 2px; }
+@media (max-width: 700px) { .portal-generated-docs-grid { grid-template-columns: 1fr; } }
