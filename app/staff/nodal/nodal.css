@@ -8,3 +8,18 @@
 
 .nodal-attendance-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:22px;padding:17px;border:1px solid var(--nodal-line);border-radius:12px;background:#fbfcff}.nodal-attendance-form label{display:grid;gap:7px;color:#36415b;font-size:10px;font-weight:800}.nodal-attendance-form input,.nodal-attendance-form select{box-sizing:border-box;width:100%;min-height:39px;padding:9px 10px;border:1px solid #dfe4f2;border-radius:8px;background:#fff;color:#26324c;font:inherit;font-size:11px}.nodal-save-button{min-height:39px;align-self:end;padding:10px 13px;border:0;border-radius:9px;background:linear-gradient(100deg,#315ce7,#5277f1);color:#fff;font-size:10px;font-weight:850;cursor:pointer}.nodal-save-button:disabled{opacity:.55;cursor:wait}
 @media(max-width:720px){.nodal-attendance-form{grid-template-columns:1fr}}
+
+/* SHIVORIX brand palette: align Nodal Officer workspace with the public site */
+:root{--nodal-ink:#201538;--nodal-muted:#766b87;--nodal-line:#ebe4f4;--nodal-blue:#6d28d9}
+.nodal-shell{background:#fbf9ff;color:#201538}
+.nodal-sidebar{background:#201538}
+.nodal-nav-item.active{background:linear-gradient(110deg,#6d28d9,#8b3dcb 68%,#f0782e);box-shadow:0 7px 18px #6426b52b}
+.nodal-welcome{background:radial-gradient(ellipse at 94% 0%,#f0782e38,transparent 34%),linear-gradient(115deg,#201538,#35205c 67%,#6426b5)}
+.nodal-kicker{color:#e7caff}
+.nodal-section-head>div>span{color:#6d28d9}
+.nodal-avatar,.nodal-panel-title>span{background:#f0e6ff;color:#6d28d9}
+.nodal-live-chip{border-color:#e4d5f6;background:#fbf7ff;color:#6d28d9}
+.nodal-cards>button:hover{border-color:#d7bdf6}
+.nodal-card-icon.blue,.nodal-card-icon.purple{background:#f0e6ff;color:#6d28d9}
+.nodal-quick-links button:hover{background:#fcf8ff;border-color:#e5d2fa}
+.nodal-info-box{background:#f7f0ff;color:#6d28d9}
