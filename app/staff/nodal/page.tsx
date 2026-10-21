@@ -153,7 +153,7 @@ export default function NodalOfficerDashboard() {
       const response = await fetch("/api/nodal/portal", {
         method: "POST",
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-        body: JSON.stringify({ action: "create_record", recordType, title: recordTitle, description: recordDescription, studentId: recordStudent, dueDate: recordDueDate, resourceUrl: recordUrl, institutionId: institutions[0]?.id }),
+        body: JSON.stringify({ action: "create_record", recordType, title: recordTitle, description: recordDescription, studentId: recordStudent, dueDate: recordDueDate, resourceUrl: recordUrl, institutionId: students.find(student=>student.id===recordStudent)?.college_id || institutions[0]?.id }),
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Record could not be saved.");
