@@ -15,6 +15,7 @@ type Student = { id: string; full_name: string | null; email: string | null; pho
 type Application = { id: string; student_id: string; status: string; applied_at: string; profiles?: { full_name: string | null; email: string | null } | null; internships?: { title: string } | null };
 type Attendance = { id: string; student_id: string; institution_id: string; attendance_date: string; status: string; notes: string | null; updated_at: string; profiles?: { full_name: string | null; email: string | null } | null };
 type PortalRecord = { id: string; student_id: string | null; institution_id: string; record_type: "assignment" | "evaluation" | "document" | "notification" | "training" | "activity" | "test" | "certificate"; title: string; description: string | null; status: string; due_date: string | null; resource_url: string | null; created_at: string };
+type PortalSubmission = { id: string; record_id: string; student_id: string; submission_url: string | null; submission_note: string | null; status: string; feedback: string | null; submitted_at: string; profiles?: { full_name: string | null; email: string | null } | null; nodal_portal_records?: { title: string; record_type: string } | { title: string; record_type: string }[] | null };
 
 const sections = [
   { label: "Dashboard", icon: LayoutDashboard, detail: "Assigned students and overall progress" },
@@ -45,6 +46,7 @@ export default function NodalOfficerDashboard() {
   const [applications, setApplications] = useState<Application[]>([]);
   const [attendanceRows, setAttendanceRows] = useState<Attendance[]>([]);
   const [records, setRecords] = useState<PortalRecord[]>([]);
+  const [submissions, setSubmissions] = useState<PortalSubmission[]>([]);
   const [recordTitle, setRecordTitle] = useState("");
   const [recordDescription, setRecordDescription] = useState("");
   const [recordStudent, setRecordStudent] = useState("");
@@ -83,6 +85,7 @@ export default function NodalOfficerDashboard() {
           setApplications((result.applications ?? []) as Application[]);
           setAttendanceRows((result.attendance ?? []) as Attendance[]);
           setRecords((result.records ?? []) as PortalRecord[]);
+          setSubmissions((result.submissions ?? []) as PortalSubmission[]);
           setAttendanceStudent((result.students?.[0]?.id) || "");
         }
       } catch (e) {
@@ -117,6 +120,7 @@ export default function NodalOfficerDashboard() {
       setApplications((data.applications ?? []) as Application[]);
       setAttendanceRows((data.attendance ?? []) as Attendance[]);
       setRecords((data.records ?? []) as PortalRecord[]);
+      setSubmissions((data.submissions ?? []) as PortalSubmission[]);
       setNotice("Application status updated.");
     } catch (e) { setError(e instanceof Error ? e.message : "Application review failed."); }
     finally { setBusy(false); }
@@ -143,6 +147,7 @@ export default function NodalOfficerDashboard() {
       setApplications((data.applications ?? []) as Application[]);
       setAttendanceRows((data.attendance ?? []) as Attendance[]);
       setRecords((data.records ?? []) as PortalRecord[]);
+      setSubmissions((data.submissions ?? []) as PortalSubmission[]);
       setAttendanceNotes("");
       setNotice("Attendance saved and audit record added.");
     } catch (e) { setError(e instanceof Error ? e.message : "Attendance could not be saved."); }
@@ -166,6 +171,7 @@ export default function NodalOfficerDashboard() {
       const data = await refreshed.json();
       if (!refreshed.ok) throw new Error(data.error || "Saved, but records could not be refreshed.");
       setRecords((data.records ?? []) as PortalRecord[]);
+      setSubmissions((data.submissions ?? []) as PortalSubmission[]);
       setInstitutions((data.institutions ?? []) as Institution[]);
       setStudents((data.students ?? []) as Student[]);
       setApplications((data.applications ?? []) as Application[]);
@@ -195,6 +201,28 @@ export default function NodalOfficerDashboard() {
       setRecords((data.records ?? []) as PortalRecord[]);
       setNotice("Record status updated.");
     } catch (e) { setError(e instanceof Error ? e.message : "Record status could not be updated."); }
+    finally { setBusy(false); }
+  }
+
+  async function reviewSubmission(submissionId: string, status: string) {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Your session expired. Please sign in again.");
+      const response = await fetch("/api/nodal/portal", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "update_submission", submissionId, status }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Submission review could not be saved.");
+      const refreshed = await fetch("/api/nodal/portal", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
+      const data = await refreshed.json();
+      if (!refreshed.ok) throw new Error(data.error || "Review saved, but submissions could not be refreshed.");
+      setSubmissions((data.submissions ?? []) as PortalSubmission[]);
+      setNotice("Student submission review updated.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Submission review could not be saved."); }
     finally { setBusy(false); }
   }
 
@@ -283,7 +311,9 @@ export default function NodalOfficerDashboard() {
                   </form>
                   <div className="nodal-table-wrap"><table className="nodal-table"><thead><tr><th>Title / details</th><th>Student</th><th>Due date</th>{["document","certificate","training","test"].includes(current.type)&&<th>Link</th>}<th>Status</th><th>Update</th></tr></thead><tbody>{visibleRecords.map(record=><tr key={record.id}><td><strong>{record.title}</strong><small>{record.description || "—"}</small></td><td>{students.find(student=>student.id===record.student_id)?.full_name || (record.student_id ? "Student" : "All students")}</td><td>{record.due_date || "—"}</td>{["document","certificate","training","test"].includes(current.type)&&<td>{record.resource_url ? <a href={record.resource_url} target="_blank" rel="noreferrer">Open link ↗</a> : "—"}</td>}<td><span className={`nodal-status ${record.status==="completed"||record.status==="published"?"accepted":record.status==="submitted"?"pending":"pending"}`}>{record.status.replace("_"," ")}</span></td><td><select aria-label={`Update status for ${record.title}`} disabled={busy} value={record.status} onChange={e=>updatePortalRecord(record.id,e.target.value)}><option value="open">Open</option><option value="in_progress">In progress</option><option value="submitted">Submitted</option><option value="completed">Completed</option><option value="published">Published</option></select></td></tr>)}</tbody></table>{visibleRecords.length===0&&<div className="nodal-empty">No records yet. Use the form above to add the first one.</div>}</div>
                 </>;
-              })()}</>}
+              })()}
+              {["Assignments & Projects","Assessments & Evaluation","My Tests","Final Test","Activities"].includes(active) && <div className="nodal-submissions-section"><div className="nodal-section-head"><div><span>STUDENT WORK</span><h2>Submissions & review</h2></div><span className="nodal-live-chip">{submissions.filter(item=>records.some(record=>record.id===item.record_id)).length} submissions</span></div><div className="nodal-table-wrap"><table className="nodal-table"><thead><tr><th>Student</th><th>Task</th><th>Submitted work</th><th>Submitted at</th><th>Review status</th></tr></thead><tbody>{submissions.filter(item=>records.some(record=>record.id===item.record_id && (active==="Assignments & Projects" ? record.record_type==="assignment" : active==="Assessments & Evaluation" ? record.record_type==="evaluation" : active==="Activities" ? record.record_type==="activity" : record.record_type==="test"))).map(item=><tr key={item.id}><td><strong>{item.profiles?.full_name || "Student"}</strong><small>{item.profiles?.email || "—"}</small></td><td>{records.find(record=>record.id===item.record_id)?.title || "Task"}</td><td>{item.submission_url && <a href={item.submission_url} target="_blank" rel="noreferrer">Open submission ↗</a>}{item.submission_note && <small>{item.submission_note}</small>}{!item.submission_url&&!item.submission_note&&"—"}</td><td>{new Date(item.submitted_at).toLocaleString()}</td><td><select aria-label={`Review submission from ${item.profiles?.full_name || "student"}`} disabled={busy} value={item.status} onChange={e=>reviewSubmission(item.id,e.target.value)}><option value="submitted">Submitted</option><option value="reviewed">Reviewed</option><option value="accepted">Accepted</option><option value="revision_requested">Request revision</option></select></td></tr>)}</tbody></table>{submissions.filter(item=>records.some(record=>record.id===item.record_id && (active==="Assignments & Projects" ? record.record_type==="assignment" : active==="Assessments & Evaluation" ? record.record_type==="evaluation" : active==="Activities" ? record.record_type==="activity" : record.record_type==="test"))).length===0&&<div className="nodal-empty">Student submissions will appear here after they submit their work.</div>}</div></div>}
+              </>}
             </section>}
           </>}
           <footer className="nodal-footer">© 2026 SHIVORIX <span><ShieldCheck size={14}/> Nodal Officer workspace</span></footer>
