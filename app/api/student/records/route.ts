@@ -32,7 +32,7 @@ export async function GET(request: Request) {
             .order("created_at", { ascending: false }).limit(300)
         : Promise.resolve({ data: [], error: null } as any),
       client.from("internship_attendance")
-        .select("id,attendance_date,status,notes,updated_at")
+        .select("id,attendance_date,status,notes,hours,updated_at")
         .eq("student_id", authData.user.id)
         .order("attendance_date", { ascending: false }).limit(300),
       client.from("internship_applications")
