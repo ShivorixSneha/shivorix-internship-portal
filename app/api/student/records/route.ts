@@ -23,26 +23,33 @@ export async function GET(request: Request) {
     if (profileError || !profile || profile.role !== "student") {
       return NextResponse.json({ error: "Student access required." }, { status: 403 });
     }
-    if (!profile.college_id) {
-      return NextResponse.json({ records: [], attendance: [], notice: "Your profile is not linked to an institution yet." }, { headers: { "Cache-Control": "no-store" } });
-    }
-
-    const [recordsResult, attendanceResult] = await Promise.all([
-      client.from("nodal_portal_records")
-        .select("id,record_type,title,description,status,due_date,resource_url,created_at,student_id")
-        .eq("institution_id", profile.college_id)
-        .or(`student_id.is.null,student_id.eq.${authData.user.id}`)
-        .order("created_at", { ascending: false }).limit(300),
+    const [recordsResult, attendanceResult, applicationsResult] = await Promise.all([
+      profile.college_id
+        ? client.from("nodal_portal_records")
+            .select("id,record_type,title,description,status,due_date,resource_url,created_at,student_id")
+            .eq("institution_id", profile.college_id)
+            .or(`student_id.is.null,student_id.eq.${authData.user.id}`)
+            .order("created_at", { ascending: false }).limit(300)
+        : Promise.resolve({ data: [], error: null } as any),
       client.from("internship_attendance")
         .select("id,attendance_date,status,notes,updated_at")
         .eq("student_id", authData.user.id)
         .order("attendance_date", { ascending: false }).limit(300),
+      client.from("internship_applications")
+        .select("id,status,applied_at,updated_at,internships(title,description,mode,location,duration_weeks)")
+        .eq("student_id", authData.user.id)
+        .order("applied_at", { ascending: false }).limit(100),
     ]);
-    if (recordsResult.error || attendanceResult.error) {
-      console.error("Student records query failed:", recordsResult.error?.message || attendanceResult.error?.message);
+    if (recordsResult.error || attendanceResult.error || applicationsResult.error) {
+      console.error("Student records query failed:", recordsResult.error?.message || attendanceResult.error?.message || applicationsResult.error?.message);
       return NextResponse.json({ error: "Student records could not be loaded." }, { status: 503 });
     }
-    return NextResponse.json({ records: recordsResult.data ?? [], attendance: attendanceResult.data ?? [] }, { headers: { "Cache-Control": "no-store" } });
+    return NextResponse.json({
+      records: recordsResult.data ?? [],
+      attendance: attendanceResult.data ?? [],
+      applications: applicationsResult.data ?? [],
+      notice: profile.college_id ? "" : "Your profile is not linked to an institution yet. Applications can still be tracked here.",
+    }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Student records API failed:", error);
     return NextResponse.json({ error: "Student records are temporarily unavailable." }, { status: 503 });
