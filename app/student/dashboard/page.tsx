@@ -12,6 +12,8 @@ import {
 import { getSupabaseBrowserClient } from "../../../lib/supabase";
 import "./dashboard.css";
 
+type StudentRecord = { id: string; record_type: "assignment" | "evaluation" | "document" | "notification"; title: string; description: string | null; status: string; due_date: string | null; resource_url: string | null; created_at: string; student_id: string | null };
+type StudentAttendance = { id: string; attendance_date: string; status: string; notes: string | null; updated_at: string };
 type Profile = {
   full_name: string | null;
   email: string | null;
@@ -39,6 +41,7 @@ const navigation = [
   { label: "Final Test", icon: GraduationCap, description: "Final assessment information" },
   { label: "Documents", icon: FolderOpen, description: "Your internship documents" },
   { label: "Evaluation", icon: CheckCircle2, description: "Review your evaluation" },
+  { label: "Notifications", icon: Bell, description: "Important notices from your institution" },
   { label: "Certificate", icon: Award, description: "Access your completion certificate" },
 ];
 
@@ -58,6 +61,9 @@ export default function StudentDashboard() {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [sectorNames, setSectorNames] = useState<string[]>([]);
+  const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
+  const [studentAttendance, setStudentAttendance] = useState<StudentAttendance[]>([]);
+  const [recordsNotice, setRecordsNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("Overview");
@@ -81,9 +87,19 @@ export default function StudentDashboard() {
         if (profileError) throw profileError;
         const { data: selections } = await supabase
           .from("student_sectors").select("sectors(name)").eq("student_id", user.id);
+        const { data: { session } } = await supabase.auth.getSession();
+        let recordData: any = { records: [], attendance: [] };
+        if (session) {
+          const response = await fetch("/api/student/records", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
+          recordData = await response.json();
+          if (!response.ok) throw new Error(recordData.error || "Could not load assignments and institution updates.");
+        }
         if (active) {
           setProfile(data as Profile);
           setSectorNames((selections || []).map((item: any) => item.sectors?.name).filter(Boolean));
+          setStudentRecords((recordData.records ?? []) as StudentRecord[]);
+          setStudentAttendance((recordData.attendance ?? []) as StudentAttendance[]);
+          setRecordsNotice(recordData.notice || "");
         }
       } catch (e) {
         if (active) setError(e instanceof Error ? e.message : "Could not load your student profile.");
@@ -180,6 +196,14 @@ export default function StudentDashboard() {
             </>
           ) : activeSection === "My Profile" ? (
             <><div className="portal-page-title"><span className="portal-page-icon"><UserRound size={22} /></span><div><div className="portal-eyebrow">YOUR INFORMATION</div><h1>My Profile</h1><p>Review your personal and academic details saved with SHIVORIX.</p></div></div><section className="portal-panel portal-details-panel"><div className="portal-panel-heading"><div><h3>Student details</h3><p>Information from your registration</p></div><span className="portal-profile-badge"><ShieldCheck size={14} /> Private profile</span></div><div className="portal-details-grid">{profileFields.map(({ label, key }) => <div className="portal-detail-field" key={key}><small>{label}</small><strong>{profile?.[key] || "Not provided"}</strong></div>)}</div><div className="portal-details-footer"><ShieldCheck size={16} /><span>Your details are shown only inside your signed-in student session.</span></div></section><section className="portal-panel portal-sectors-panel"><div className="portal-panel-heading"><div><h3>Selected internship sectors</h3><p>Your current areas of interest</p></div></div>{sectorNames.length ? <div className="portal-sector-list">{sectorNames.map((name) => <span key={name}><CheckCircle2 size={14} />{name}</span>)}</div> : <p className="portal-muted">No internship sectors are linked to your profile yet.</p>}</section></>
+          ) : ["Assignments","Assessments","Evaluation","Documents","Notifications","Attendance"].includes(activeSection) ? (
+            <><div className="portal-page-title"><span className="portal-page-icon"><SelectedIcon size={22} /></span><div><div className="portal-eyebrow">YOUR LIVE RECORDS</div><h1>{activeSection}</h1><p>{selectedItem?.description || "Your student workspace."}</p></div></div>
+              {recordsNotice && <div className="portal-info-note"><Bell size={18}/><div><strong>Institution setup</strong><p>{recordsNotice}</p></div></div>}
+              {activeSection === "Attendance" ? <section className="portal-panel"><div className="portal-panel-heading"><div><span className="portal-panel-icon"><CalendarCheck size={17}/></span><div><h3>Attendance history</h3><p>Attendance marked by your Nodal Officer</p></div></div></div>{studentAttendance.length ? <div className="portal-record-list">{studentAttendance.map(item=><article className="portal-record-item" key={item.id}><div><strong>{new Date(item.attendance_date+"T00:00:00").toLocaleDateString()}</strong><p>{item.notes || "No additional notes"}</p></div><span className={`portal-record-status ${item.status}`}>{item.status}</span></article>)}</div> : <div className="portal-empty-inline"><span><CalendarCheck size={20}/></span><div><strong>No attendance records yet</strong><p>Your institution's attendance entries will appear here.</p></div></div>}</section> : (() => {
+                const recordType = activeSection === "Assignments" ? "assignment" : activeSection === "Documents" ? "document" : activeSection === "Notifications" ? "notification" : "evaluation";
+                const visible = studentRecords.filter(item => item.record_type === recordType);
+                return <section className="portal-panel"><div className="portal-panel-heading"><div><span className="portal-panel-icon"><SelectedIcon size={17}/></span><div><h3>{activeSection}</h3><p>Records shared by your assigned institution</p></div></div></div>{visible.length ? <div className="portal-record-list">{visible.map(item=><article className="portal-record-item" key={item.id}><div><strong>{item.title}</strong><p>{item.description || "No additional details provided."}</p><small>{item.due_date ? "Due: "+new Date(item.due_date+"T00:00:00").toLocaleDateString() : "Added: "+new Date(item.created_at).toLocaleDateString()}</small>{item.record_type==="document"&&item.resource_url&&<a className="portal-record-link" href={item.resource_url} target="_blank" rel="noreferrer">Open document ↗</a>}</div><span className={`portal-record-status ${item.status}`}>{item.status.replace("_"," ")}</span></article>)}</div> : <div className="portal-empty-inline"><span><SelectedIcon size={20}/></span><div><strong>No {activeSection.toLowerCase()} yet</strong><p>New records from your institution will appear here when available.</p></div></div>}</section>;
+              })()}</>
           ) : (
             <><div className="portal-page-title"><span className="portal-page-icon"><SelectedIcon size={22} /></span><div><div className="portal-eyebrow">SHIVORIX STUDENT WORKSPACE</div><h1>{activeSection}</h1><p>{selectedItem?.description || "Your student workspace."}</p></div></div><section className="portal-feature-card"><div className="portal-feature-visual"><div className="portal-feature-glow" /><SelectedIcon size={48} strokeWidth={1.35} /></div><div className="portal-feature-copy"><span className="portal-feature-label">YOUR NEXT STEP</span><h2>{activeSection === "Apply for Internship" ? "Find your opportunity." : activeSection === "My Application" ? "Your application, clearly tracked." : activeSection === "Certificate" ? "Your achievements belong here." : "Your progress, in one place."}</h2><p>{selectedItem?.description}. This section is part of your student portal navigation. Its live records and actions will appear here as the corresponding portal feature is connected.</p>{activeSection === "Apply for Internship" ? <Link href="/internships" className="portal-primary-btn">Explore internships <ArrowRight size={16} /></Link> : activeSection === "My Profile" ? <button className="portal-primary-btn" onClick={() => setActiveSection("My Profile")}>View profile <ArrowRight size={16} /></button> : <div className="portal-coming-soon"><Clock3 size={16} /><span>Section ready for feature integration</span></div>}</div></section><div className="portal-info-note"><MessageSquareText size={18} /><div><strong>Everything in its place</strong><p>Use the left navigation to move between your profile, application, learning, assessments, attendance, submissions, and documents.</p></div></div></>
           )}
