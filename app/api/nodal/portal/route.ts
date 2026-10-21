@@ -63,6 +63,14 @@ export async function GET(request: Request) {
       : { data: [], error: null };
     if (recordsError) throw recordsError;
 
+    const recordIds = (records ?? []).map((record) => record.id);
+    const { data: submissions, error: submissionsError } = recordIds.length
+      ? await client.from("nodal_record_submissions")
+          .select("id,record_id,student_id,submission_url,submission_note,status,feedback,submitted_at,updated_at,profiles(full_name,email),nodal_portal_records(title,record_type)")
+          .in("record_id", recordIds).order("submitted_at", { ascending: false }).limit(1000)
+      : { data: [], error: null };
+    if (submissionsError) throw submissionsError;
+
     return NextResponse.json({
       profile: { full_name: auth.profile.full_name, email: auth.profile.email },
       institutions: institutions ?? [],
@@ -70,6 +78,7 @@ export async function GET(request: Request) {
       applications: applications ?? [],
       attendance: attendance ?? [],
       records: records ?? [],
+      submissions: submissions ?? [],
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Nodal portal GET failed:", error);
@@ -180,6 +189,31 @@ export async function PATCH(request: Request) {
     const auth = await requireNodal(request, client);
     if (!auth) return NextResponse.json({ error: "Nodal Officer access required." }, { status: 403 });
     const body = await request.json();
+    if (body.action === "update_submission") {
+      const submissionId = typeof body.submissionId === "string" ? body.submissionId : "";
+      const status = typeof body.status === "string" ? body.status : "";
+      const feedback = typeof body.feedback === "string" ? body.feedback.trim().slice(0, 5000) : "";
+      if (!submissionId || !["reviewed", "accepted", "revision_requested"].includes(status)) {
+        return NextResponse.json({ error: "Submission or review status is invalid." }, { status: 400 });
+      }
+      const { data: assignedInstitutions, error: assignedError } = await client.from("colleges")
+        .select("id").eq("nodal_officer_id", auth.user.id);
+      if (assignedError) throw assignedError;
+      const institutionIds = (assignedInstitutions ?? []).map((item) => item.id);
+      const { data: records, error: recordError } = institutionIds.length
+        ? await client.from("nodal_portal_records").select("id").in("institution_id", institutionIds)
+        : { data: [], error: null };
+      if (recordError) throw recordError;
+      const recordIds = (records ?? []).map((item) => item.id);
+      const { data: submission, error: updateError } = recordIds.length
+        ? await client.from("nodal_record_submissions").update({
+            status, feedback: feedback || null, reviewed_by: auth.user.id,
+            reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+          }).eq("id", submissionId).in("record_id", recordIds).select("id,status,feedback").maybeSingle()
+        : { data: null, error: null };
+      if (updateError || !submission) return NextResponse.json({ error: "Submission not found in your assigned institution." }, { status: 404 });
+      return NextResponse.json({ success: true, submission }, { headers: { "Cache-Control": "no-store" } });
+    }
     if (body.action === "update_record") {
       const recordId = typeof body.recordId === "string" ? body.recordId : "";
       const status = typeof body.status === "string" ? body.status : "";
