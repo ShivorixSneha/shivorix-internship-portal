@@ -40,6 +40,7 @@ export default function AdminDashboard() {
   const [colleges, setColleges] = useState<College[]>([]);
   const [internships, setInternships] = useState<Internship[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [portalStats, setPortalStats] = useState({ profiles: 0, students: 0, colleges: 0, internships: 0, activeInternships: 0, applications: 0, pendingApplications: 0, acceptedApplications: 0, rejectedApplications: 0 });
   const [collegeName, setCollegeName] = useState("");
   const [university, setUniversity] = useState("");
   const [city, setCity] = useState("");
@@ -59,6 +60,7 @@ export default function AdminDashboard() {
     setColleges((result.colleges ?? []) as College[]);
     setInternships((result.internships ?? []) as Internship[]);
     setApplications((result.applications ?? []) as Application[]);
+    if (result.stats) setPortalStats(result.stats);
   }, []);
 
   useEffect(() => {
@@ -186,14 +188,14 @@ export default function AdminDashboard() {
             {active === "Overview" && <>
               <div className="admin-section-head"><div><span>PORTAL SNAPSHOT</span><h2>At a glance</h2></div><button className="admin-refresh" onClick={() => loadData().then(()=>setNotice("Portal data refreshed.")).catch(e=>setError(e.message))}>Refresh data ↻</button></div>
               <div className="admin-stats">
-                <button onClick={()=>setActive("Institutions")}><span className="stat-icon indigo"><Building2 size={20}/></span><small>Institutions</small><strong>{colleges.length}</strong><em>Manage assignments <ChevronRight size={13}/></em></button>
+                <button onClick={()=>setActive("Institutions")}><span className="stat-icon indigo"><Building2 size={20}/></span><small>Institutions</small><strong>{portalStats.colleges}</strong><em>Manage assignments <ChevronRight size={13}/></em></button>
                 <button onClick={()=>setActive("Nodal Officers")}><span className="stat-icon violet"><ShieldCheck size={20}/></span><small>Nodal Officers</small><strong>{officers.length}</strong><em>{colleges.filter(c=>c.nodal_officer_id).length} institutions assigned</em></button>
-                <button onClick={()=>setActive("Students")}><span className="stat-icon teal"><GraduationCap size={20}/></span><small>Registered students</small><strong>{students.length}</strong><em>Student profiles</em></button>
-                <button onClick={()=>setActive("Internships")}><span className="stat-icon orange"><BriefcaseBusiness size={20}/></span><small>Active internships</small><strong>{internships.filter(i=>i.is_active).length}</strong><em>{internships.length} total listings</em></button>
-                <button onClick={()=>setActive("Applications")}><span className="stat-icon violet"><ClipboardCheck size={20}/></span><small>Total applications</small><strong>{applications.length}</strong><em>Latest 100 records loaded</em></button>
-                <button onClick={()=>setActive("Applications")}><span className="stat-icon orange"><Activity size={20}/></span><small>Pending review</small><strong>{applications.filter(a=>["submitted","under_review"].includes(a.status)).length}</strong><em>Submitted or under review</em></button>
-                <button onClick={()=>setActive("Applications")}><span className="stat-icon teal"><CheckCircle2 size={20}/></span><small>Accepted</small><strong>{applications.filter(a=>a.status==="accepted").length}</strong><em>Accepted applications</em></button>
-                <button onClick={()=>setActive("Applications")}><span className="stat-icon indigo"><X size={20}/></span><small>Rejected</small><strong>{applications.filter(a=>a.status==="rejected").length}</strong><em>Rejected applications</em></button>
+                <button onClick={()=>setActive("Students")}><span className="stat-icon teal"><GraduationCap size={20}/></span><small>Registered students</small><strong>{portalStats.students}</strong><em>Student profiles</em></button>
+                <button onClick={()=>setActive("Internships")}><span className="stat-icon orange"><BriefcaseBusiness size={20}/></span><small>Active internships</small><strong>{portalStats.activeInternships}</strong><em>{portalStats.internships} total listings</em></button>
+                <button onClick={()=>setActive("Applications")}><span className="stat-icon violet"><ClipboardCheck size={20}/></span><small>Total applications</small><strong>{portalStats.applications}</strong><em>{applications.length} latest records loaded</em></button>
+                <button onClick={()=>setActive("Applications")}><span className="stat-icon orange"><Activity size={20}/></span><small>Pending review</small><strong>{portalStats.pendingApplications}</strong><em>Submitted or under review</em></button>
+                <button onClick={()=>setActive("Applications")}><span className="stat-icon teal"><CheckCircle2 size={20}/></span><small>Accepted</small><strong>{portalStats.acceptedApplications}</strong><em>Accepted applications</em></button>
+                <button onClick={()=>setActive("Applications")}><span className="stat-icon indigo"><X size={20}/></span><small>Rejected</small><strong>{portalStats.rejectedApplications}</strong><em>Rejected applications</em></button>
               </div>
               <div className="admin-overview-grid"><section className="admin-panel"><div className="admin-panel-head"><div><h3>Institution assignments</h3><p>Check which institutions have a Nodal Officer.</p></div><button onClick={()=>setActive("Institutions")}>View all <ArrowUpRight size={15}/></button></div>{colleges.length ? colleges.slice(0,5).map(c=><div className="admin-list-row" key={c.id}><span className="admin-row-icon"><Building2 size={17}/></span><div><strong>{c.name}</strong><small>{[c.city,c.state].filter(Boolean).join(", ") || "Location not added"}</small></div><span className={`admin-status ${c.nodal_officer_id ? "assigned" : "pending"}`}>{c.nodal_officer_id ? "Assigned" : "Unassigned"}</span></div>) : <div className="admin-empty">No institutions yet. Add one in Institutions.</div>}</section>
               <section className="admin-panel"><div className="admin-panel-head"><div><h3>Recent applications</h3><p>Latest student internship submissions.</p></div><button onClick={()=>setActive("Applications")}>View all <ArrowUpRight size={15}/></button></div>{applications.length ? applications.slice(0,5).map(a=><div className="admin-list-row" key={a.id}><span className="admin-row-icon purple"><ClipboardCheck size={17}/></span><div><strong>{a.profiles?.full_name || a.profiles?.email || "Student"}</strong><small>{a.internships?.title || "Internship"} · {new Date(a.applied_at).toLocaleDateString()}</small></div><span className={`admin-status ${a.status === "accepted" ? "assigned" : a.status === "rejected" ? "rejected" : "pending"}`}>{a.status.replace("_"," ")}</span></div>) : <div className="admin-empty">No applications found.</div>}</section></div>
