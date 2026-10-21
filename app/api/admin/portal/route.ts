@@ -27,7 +27,7 @@ export async function GET(request: Request) {
     const user = await requireAdmin(request, client);
     if (!user) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
 
-    const [profiles, colleges, internships, applications] = await Promise.all([
+    const [profiles, colleges, internships, applications, profileCount, studentCount, collegeCount, internshipCount, activeInternshipCount, applicationCount, pendingCount, acceptedCount, rejectedCount] = await Promise.all([
       client.from("profiles")
         .select("id,role,full_name,email,college_id,institution_name,course,created_at")
         .order("created_at", { ascending: false }).limit(500),
@@ -40,8 +40,17 @@ export async function GET(request: Request) {
       client.from("internship_applications")
         .select("id,status,applied_at,updated_at,profiles(full_name,email),internships(title)")
         .order("applied_at", { ascending: false }).limit(100),
+      client.from("profiles").select("id", { count: "exact", head: true }),
+      client.from("profiles").select("id", { count: "exact", head: true }).eq("role", "student"),
+      client.from("colleges").select("id", { count: "exact", head: true }),
+      client.from("internships").select("id", { count: "exact", head: true }),
+      client.from("internships").select("id", { count: "exact", head: true }).eq("is_active", true),
+      client.from("internship_applications").select("id", { count: "exact", head: true }),
+      client.from("internship_applications").select("id", { count: "exact", head: true }).in("status", ["submitted", "under_review"]),
+      client.from("internship_applications").select("id", { count: "exact", head: true }).eq("status", "accepted"),
+      client.from("internship_applications").select("id", { count: "exact", head: true }).eq("status", "rejected"),
     ]);
-    const error = profiles.error || colleges.error || internships.error || applications.error;
+    const error = profiles.error || colleges.error || internships.error || applications.error || profileCount.error || studentCount.error || collegeCount.error || internshipCount.error || activeInternshipCount.error || applicationCount.error || pendingCount.error || acceptedCount.error || rejectedCount.error;
     if (error) {
       console.error("Admin portal data query failed:", error.message);
       return NextResponse.json({ error: "Portal data could not be loaded. Check the database schema and server configuration." }, { status: 503 });
@@ -51,6 +60,17 @@ export async function GET(request: Request) {
       colleges: colleges.data ?? [],
       internships: internships.data ?? [],
       applications: applications.data ?? [],
+      stats: {
+        profiles: profileCount.count ?? 0,
+        students: studentCount.count ?? 0,
+        colleges: collegeCount.count ?? 0,
+        internships: internshipCount.count ?? 0,
+        activeInternships: activeInternshipCount.count ?? 0,
+        applications: applicationCount.count ?? 0,
+        pendingApplications: pendingCount.count ?? 0,
+        acceptedApplications: acceptedCount.count ?? 0,
+        rejectedApplications: rejectedCount.count ?? 0,
+      },
       limits: { profiles: 500, internships: 100, applications: 100 },
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
