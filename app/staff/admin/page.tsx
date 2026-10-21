@@ -38,8 +38,6 @@ const nav = [
   { label: "Reports", icon: Activity },
   { label: "Settings", icon: ShieldCheck },
   { label: "Audit Logs", icon: Activity },
-  { label: "Colleges", icon: Building2 },
-  { label: "Settings", icon: ShieldCheck },
 ];
 
 export default function AdminDashboard() {
