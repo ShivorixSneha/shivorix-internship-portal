@@ -60,6 +60,7 @@ export default function StaffDashboard() {
         if (sectorError) throw sectorError;
         await loadInternships();
         if (active) {
+          if (profile.role === "nodal_officer") { router.replace("/staff/nodal"); return; }
           setRole(profile.role);
           setSectors(sectorData ?? []);
           setLoading(false);
