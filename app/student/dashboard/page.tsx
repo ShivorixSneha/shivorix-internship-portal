@@ -14,6 +14,7 @@ import "./dashboard.css";
 
 type StudentRecord = { id: string; record_type: "assignment" | "evaluation" | "document" | "notification" | "training" | "activity" | "test" | "certificate"; title: string; description: string | null; status: string; due_date: string | null; resource_url: string | null; created_at: string; student_id: string | null };
 type StudentAttendance = { id: string; attendance_date: string; status: string; notes: string | null; updated_at: string };
+type StudentSubmission = { id: string; record_id: string; status: string; submission_url: string | null; submission_note: string | null; feedback: string | null; submitted_at: string };
 type StudentApplication = { id: string; status: string; applied_at: string; updated_at: string | null; internships: { title: string; description: string | null; mode: string; location: string | null; duration_weeks: number | null } | { title: string; description: string | null; mode: string; location: string | null; duration_weeks: number | null }[] | null };
 type Profile = {
   full_name: string | null;
@@ -65,6 +66,9 @@ export default function StudentDashboard() {
   const [studentRecords, setStudentRecords] = useState<StudentRecord[]>([]);
   const [studentAttendance, setStudentAttendance] = useState<StudentAttendance[]>([]);
   const [studentApplications, setStudentApplications] = useState<StudentApplication[]>([]);
+  const [studentSubmissions, setStudentSubmissions] = useState<StudentSubmission[]>([]);
+  const [submissionBusy, setSubmissionBusy] = useState(false);
+  const [submissionNotice, setSubmissionNotice] = useState("");
   const [recordsNotice, setRecordsNotice] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -102,6 +106,7 @@ export default function StudentDashboard() {
           setStudentRecords((recordData.records ?? []) as StudentRecord[]);
           setStudentAttendance((recordData.attendance ?? []) as StudentAttendance[]);
           setStudentApplications((recordData.applications ?? []) as StudentApplication[]);
+          setStudentSubmissions((recordData.submissions ?? []) as StudentSubmission[]);
           setRecordsNotice(recordData.notice || "");
         }
       } catch (e) {
@@ -118,6 +123,34 @@ export default function StudentDashboard() {
     const filled = profileFields.filter(({ key }) => Boolean(profile[key]?.toString().trim())).length;
     return Math.round((filled / profileFields.length) * 100);
   }, [profile]);
+
+  async function submitStudentWork(event: React.FormEvent<HTMLFormElement>, recordId: string) {
+    event.preventDefault(); setSubmissionBusy(true); setError(""); setSubmissionNotice("");
+    try {
+      const form = event.currentTarget;
+      const values = new FormData(form);
+      const supabase = getSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) { router.replace("/login"); return; }
+      const response = await fetch("/api/student/records", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ recordId, submissionUrl: values.get("submissionUrl"), submissionNote: values.get("submissionNote") }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Submission could not be saved.");
+      const refreshed = await fetch("/api/student/records", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
+      const data = await refreshed.json();
+      if (!refreshed.ok) throw new Error(data.error || "Submission saved, but records could not be refreshed.");
+      setStudentRecords((data.records ?? []) as StudentRecord[]);
+      setStudentAttendance((data.attendance ?? []) as StudentAttendance[]);
+      setStudentApplications((data.applications ?? []) as StudentApplication[]);
+      setStudentSubmissions((data.submissions ?? []) as StudentSubmission[]);
+      form.reset();
+      setSubmissionNotice("Your work was submitted successfully.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Submission could not be saved."); }
+    finally { setSubmissionBusy(false); }
+  }
 
   async function logout() {
     const supabase = getSupabaseBrowserClient();
@@ -201,11 +234,11 @@ export default function StudentDashboard() {
             <><div className="portal-page-title"><span className="portal-page-icon"><UserRound size={22} /></span><div><div className="portal-eyebrow">YOUR INFORMATION</div><h1>My Profile</h1><p>Review your personal and academic details saved with SHIVORIX.</p></div></div><section className="portal-panel portal-details-panel"><div className="portal-panel-heading"><div><h3>Student details</h3><p>Information from your registration</p></div><span className="portal-profile-badge"><ShieldCheck size={14} /> Private profile</span></div><div className="portal-details-grid">{profileFields.map(({ label, key }) => <div className="portal-detail-field" key={key}><small>{label}</small><strong>{profile?.[key] || "Not provided"}</strong></div>)}</div><div className="portal-details-footer"><ShieldCheck size={16} /><span>Your details are shown only inside your signed-in student session.</span></div></section><section className="portal-panel portal-sectors-panel"><div className="portal-panel-heading"><div><h3>Selected internship sectors</h3><p>Your current areas of interest</p></div></div>{sectorNames.length ? <div className="portal-sector-list">{sectorNames.map((name) => <span key={name}><CheckCircle2 size={14} />{name}</span>)}</div> : <p className="portal-muted">No internship sectors are linked to your profile yet.</p>}</section></>
           ) : ["Assignments","Assessments","Evaluation","Documents","Notifications","Attendance","My Application","Internship Details","Online Training","Activities","My Tests","Project & Report","Final Test","Certificate"].includes(activeSection) ? (
             <><div className="portal-page-title"><span className="portal-page-icon"><SelectedIcon size={22} /></span><div><div className="portal-eyebrow">YOUR LIVE RECORDS</div><h1>{activeSection}</h1><p>{selectedItem?.description || "Your student workspace."}</p></div></div>
-              {recordsNotice && <div className="portal-info-note"><Bell size={18}/><div><strong>Institution setup</strong><p>{recordsNotice}</p></div></div>}
+              {submissionNotice && <div className="portal-info-note"><CheckCircle2 size={18}/><div><strong>Submission saved</strong><p>{submissionNotice}</p></div></div>}{error && <div className="portal-info-note"><CircleHelp size={18}/><div><strong>Action needs attention</strong><p>{error}</p></div></div>}{recordsNotice && <div className="portal-info-note"><Bell size={18}/><div><strong>Institution setup</strong><p>{recordsNotice}</p></div></div>}
               {activeSection === "My Application" || activeSection === "Internship Details" ? <section className="portal-panel"><div className="portal-panel-heading"><div><span className="portal-panel-icon"><BriefcaseBusiness size={17}/></span><div><h3>{activeSection}</h3><p>Your submitted internship applications and current statuses</p></div></div><Link href="/internships" className="portal-record-link">Explore internships ↗</Link></div>{studentApplications.length ? <div className="portal-record-list">{studentApplications.map(item=>{const internship=Array.isArray(item.internships)?item.internships[0]:item.internships;return <article className="portal-record-item" key={item.id}><div><strong>{internship?.title || "Internship application"}</strong><p>{internship?.description || "No additional internship details provided."}</p><small>Applied: {new Date(item.applied_at).toLocaleDateString()}{internship?.mode ? " · "+internship.mode : ""}{internship?.location ? " · "+internship.location : ""}{internship?.duration_weeks ? " · "+internship.duration_weeks+" weeks" : ""}</small></div><span className={`portal-record-status ${item.status}`}>{item.status.replace("_"," ")}</span></article>})}</div> : <div className="portal-empty-inline"><span><BriefcaseBusiness size={20}/></span><div><strong>No applications yet</strong><p>Explore internships and submit an application to track it here.</p><Link href="/internships" className="portal-record-link">Browse internships ↗</Link></div></div>}</section> : activeSection === "Attendance" ? <section className="portal-panel"><div className="portal-panel-heading"><div><span className="portal-panel-icon"><CalendarCheck size={17}/></span><div><h3>Attendance history</h3><p>Attendance marked by your Nodal Officer</p></div></div></div>{studentAttendance.length ? <div className="portal-record-list">{studentAttendance.map(item=><article className="portal-record-item" key={item.id}><div><strong>{new Date(item.attendance_date+"T00:00:00").toLocaleDateString()}</strong><p>{item.notes || "No additional notes"}</p></div><span className={`portal-record-status ${item.status}`}>{item.status}</span></article>)}</div> : <div className="portal-empty-inline"><span><CalendarCheck size={20}/></span><div><strong>No attendance records yet</strong><p>Your institution's attendance entries will appear here.</p></div></div>}</section> : (() => {
                 const recordType = ["Assignments","Project & Report"].includes(activeSection) ? "assignment" : activeSection === "Documents" ? "document" : activeSection === "Notifications" ? "notification" : activeSection === "Online Training" ? "training" : activeSection === "Activities" ? "activity" : ["My Tests","Final Test"].includes(activeSection) ? "test" : activeSection === "Certificate" ? "certificate" : "evaluation";
                 const visible = studentRecords.filter(item => item.record_type === recordType);
-                return <section className="portal-panel"><div className="portal-panel-heading"><div><span className="portal-panel-icon"><SelectedIcon size={17}/></span><div><h3>{activeSection}</h3><p>Records shared by your assigned institution</p></div></div></div>{visible.length ? <div className="portal-record-list">{visible.map(item=><article className="portal-record-item" key={item.id}><div><strong>{item.title}</strong><p>{item.description || "No additional details provided."}</p><small>{item.due_date ? "Due: "+new Date(item.due_date+"T00:00:00").toLocaleDateString() : "Added: "+new Date(item.created_at).toLocaleDateString()}</small>{item.record_type==="document"&&item.resource_url&&<a className="portal-record-link" href={item.resource_url} target="_blank" rel="noreferrer">Open document ↗</a>}</div><span className={`portal-record-status ${item.status}`}>{item.status.replace("_"," ")}</span></article>)}</div> : <div className="portal-empty-inline"><span><SelectedIcon size={20}/></span><div><strong>No {activeSection.toLowerCase()} yet</strong><p>New records from your institution will appear here when available.</p></div></div>}</section>;
+                return <section className="portal-panel"><div className="portal-panel-heading"><div><span className="portal-panel-icon"><SelectedIcon size={17}/></span><div><h3>{activeSection}</h3><p>Records shared by your assigned institution</p></div></div></div>{visible.length ? <div className="portal-record-list">{visible.map(item=>{const submission=studentSubmissions.find(entry=>entry.record_id===item.id);const canSubmit=["assignment","activity","test","evaluation"].includes(item.record_type);return <article className="portal-record-item" key={item.id}><div><strong>{item.title}</strong><p>{item.description || "No additional details provided."}</p><small>{item.due_date ? "Due: "+new Date(item.due_date+"T00:00:00").toLocaleDateString() : "Added: "+new Date(item.created_at).toLocaleDateString()}</small>{["document","certificate","training","test"].includes(item.record_type)&&item.resource_url&&<a className="portal-record-link" href={item.resource_url} target="_blank" rel="noreferrer">Open resource ↗</a>}{canSubmit&&<><div className="portal-submission-current">{submission ? <>Your submission: <strong>{submission.status.replace("_"," ")}</strong>{submission.feedback&&<p>Feedback: {submission.feedback}</p>}</> : "Not submitted yet"}</div><form className="portal-submission-form" onSubmit={event=>submitStudentWork(event,item.id)}><label>Submission link (optional)<input name="submissionUrl" type="url" placeholder="https://…" /></label><label>Notes / answer<textarea name="submissionNote" rows={2} maxLength={5000} placeholder="Write your answer or submission notes" /></label><button type="submit" disabled={submissionBusy}>{submissionBusy?"Submitting…":submission?"Update submission":"Submit work"}</button></form></>}</div><span className={`portal-record-status ${submission?.status || item.status}`}>{(submission?.status || item.status).replace("_"," ")}</span></article>})}</div> : <div className="portal-empty-inline"><span><SelectedIcon size={20}/></span><div><strong>No {activeSection.toLowerCase()} yet</strong><p>New records from your institution will appear here when available.</p></div></div>}</section>;
               })()}</>
           ) : (
             <><div className="portal-page-title"><span className="portal-page-icon"><SelectedIcon size={22} /></span><div><div className="portal-eyebrow">SHIVORIX STUDENT WORKSPACE</div><h1>{activeSection}</h1><p>{selectedItem?.description || "Your student workspace."}</p></div></div><section className="portal-feature-card"><div className="portal-feature-visual"><div className="portal-feature-glow" /><SelectedIcon size={48} strokeWidth={1.35} /></div><div className="portal-feature-copy"><span className="portal-feature-label">YOUR NEXT STEP</span><h2>{activeSection === "Apply for Internship" ? "Find your opportunity." : activeSection === "My Application" ? "Your application, clearly tracked." : activeSection === "Certificate" ? "Your achievements belong here." : "Your progress, in one place."}</h2><p>{selectedItem?.description}. This section is part of your student portal navigation. Its live records and actions will appear here as the corresponding portal feature is connected.</p>{activeSection === "Apply for Internship" ? <Link href="/internships" className="portal-primary-btn">Explore internships <ArrowRight size={16} /></Link> : activeSection === "My Profile" ? <button className="portal-primary-btn" onClick={() => setActiveSection("My Profile")}>View profile <ArrowRight size={16} /></button> : <div className="portal-coming-soon"><Clock3 size={16} /><span>Section ready for feature integration</span></div>}</div></section><div className="portal-info-note"><MessageSquareText size={18} /><div><strong>Everything in its place</strong><p>Use the left navigation to move between your profile, application, learning, assessments, attendance, submissions, and documents.</p></div></div></>
