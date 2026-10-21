@@ -205,11 +205,13 @@ export async function PATCH(request: Request) {
         : { data: [], error: null };
       if (recordError) throw recordError;
       const recordIds = (records ?? []).map((item) => item.id);
+      const submissionUpdates: { status: string; reviewed_by: string; reviewed_at: string; updated_at: string; feedback?: string | null } = {
+        status, reviewed_by: auth.user.id, reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
+      };
+      if (typeof body.feedback === "string") submissionUpdates.feedback = feedback || null;
       const { data: submission, error: updateError } = recordIds.length
-        ? await client.from("nodal_record_submissions").update({
-            status, feedback: feedback || null, reviewed_by: auth.user.id,
-            reviewed_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-          }).eq("id", submissionId).in("record_id", recordIds).select("id,status,feedback").maybeSingle()
+        ? await client.from("nodal_record_submissions").update(submissionUpdates)
+            .eq("id", submissionId).in("record_id", recordIds).select("id,status,feedback").maybeSingle()
         : { data: null, error: null };
       if (updateError || !submission) return NextResponse.json({ error: "Submission not found in your assigned institution." }, { status: 404 });
       return NextResponse.json({ success: true, submission }, { headers: { "Cache-Control": "no-store" } });
