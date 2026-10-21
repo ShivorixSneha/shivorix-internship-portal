@@ -150,6 +150,34 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
 
+    if (body.action === "set_profile_role") {
+      const targetId = typeof body.profileId === "string" ? body.profileId : "";
+      const role = typeof body.role === "string" ? body.role : "";
+      if (!targetId || targetId === user.id || !["student", "nodal_officer"].includes(role)) {
+        return NextResponse.json({ error: "Choose a different user and a supported staff/student role." }, { status: 400 });
+      }
+      const { data: target, error: targetError } = await client.from("profiles")
+        .select("id,role,full_name,email").eq("id", targetId).maybeSingle();
+      if (targetError || !target) return NextResponse.json({ error: "Profile not found." }, { status: 404 });
+      if (target.role === "admin") return NextResponse.json({ error: "Admin roles cannot be changed from this screen." }, { status: 403 });
+      if (target.role === role) return NextResponse.json({ success: true, unchanged: true });
+      const { error: roleError } = await client.from("profiles").update({ role, updated_at: new Date().toISOString() }).eq("id", targetId);
+      if (roleError) {
+        console.error("Admin profile role update failed:", roleError.message);
+        return NextResponse.json({ error: "Role could not be updated." }, { status: 400 });
+      }
+      const { error: auditError } = await client.from("admin_audit_log").insert({
+        actor_id: user.id, target_profile_id: targetId, action: "profile_role_changed",
+        old_value: { role: target.role }, new_value: { role },
+        details: { target_email: target.email, target_name: target.full_name },
+      });
+      if (auditError) {
+        console.error("Admin role audit insert failed:", auditError.message);
+        return NextResponse.json({ error: "Role was updated, but the audit record failed. Contact the administrator." }, { status: 500 });
+      }
+      return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
+    }
+
     return NextResponse.json({ error: "Unsupported admin action." }, { status: 400 });
   } catch (error) {
     console.error("Admin portal PATCH failed:", error);
