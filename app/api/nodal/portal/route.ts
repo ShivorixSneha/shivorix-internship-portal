@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     const { data: attendance, error: attendanceError } = institutionIds.length
       ? await client.from("internship_attendance")
-          .select("id,student_id,institution_id,attendance_date,status,notes,updated_at,profiles(full_name,email)")
+          .select("id,student_id,institution_id,attendance_date,status,notes,hours,updated_at,profiles(full_name,email)")
           .in("institution_id", institutionIds).order("attendance_date", { ascending: false }).limit(500)
       : { data: [], error: null };
     if (attendanceError) throw attendanceError;
@@ -138,6 +138,8 @@ export async function POST(request: Request) {
     const attendanceDate = typeof body.date === "string" ? body.date : "";
     const status = typeof body.status === "string" ? body.status : "";
     const notes = typeof body.notes === "string" ? body.notes.trim().slice(0, 500) : "";
+    const hours = body.hours === "" || body.hours === null || body.hours === undefined ? null : Number(body.hours);
+    if (hours !== null && (!Number.isFinite(hours) || hours < 0 || hours > 24)) return NextResponse.json({ error: "Hours must be between 0 and 24." }, { status: 400 });
     if (!studentId || !/^\d{4}-\d{2}-\d{2}$/.test(attendanceDate) || !["present", "absent", "leave"].includes(status)) {
       return NextResponse.json({ error: "Choose a student, valid date, and attendance status." }, { status: 400 });
     }
@@ -160,7 +162,7 @@ export async function POST(request: Request) {
 
     const { data: saved, error: saveError } = await client.from("internship_attendance").upsert({
       student_id: studentId, institution_id: student.college_id, attendance_date: attendanceDate,
-      status, notes: notes || null, marked_by: auth.user.id, updated_at: new Date().toISOString(),
+      status, notes: notes || null, hours, marked_by: auth.user.id, updated_at: new Date().toISOString(),
     }, { onConflict: "student_id,attendance_date" }).select("id").single();
     if (saveError) {
       console.error("Attendance save failed:", saveError.message);
