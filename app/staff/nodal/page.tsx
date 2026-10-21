@@ -40,7 +40,7 @@ export default function NodalOfficerDashboard() {
         const { data: profile, error: profileError } = await supabase
           .from("profiles").select("role,full_name").eq("id", user.id).single();
         if (profileError || profile?.role !== "nodal_officer") {
-          router.replace(profile?.role === "admin" ? "/staff/dashboard" : "/staff/login");
+          router.replace(profile?.role === "admin" ? "/staff/admin" : "/staff/login");
           return;
         }
         if (alive) setName(profile.full_name || user.email || "Nodal Officer");
