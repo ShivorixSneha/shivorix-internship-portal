@@ -24,8 +24,37 @@ export async function POST(request: Request) {
     const body = await request.json();
     const internshipId = typeof body.internshipId === "string" ? body.internshipId : "";
     const coverNote = typeof body.coverNote === "string" ? body.coverNote.trim() : "";
+    const studentDetails = {
+      full_name: typeof body.fullName === "string" ? body.fullName.trim() : "",
+      phone: typeof body.phone === "string" ? body.phone.trim() : "",
+      father_name: typeof body.fatherName === "string" ? body.fatherName.trim() : "",
+      mother_name: typeof body.motherName === "string" ? body.motherName.trim() : "",
+      date_of_birth: typeof body.dateOfBirth === "string" ? body.dateOfBirth : "",
+      gender: typeof body.gender === "string" ? body.gender.trim() : "",
+      address: typeof body.address === "string" ? body.address.trim() : "",
+      roll_number: typeof body.rollNumber === "string" ? body.rollNumber.trim() : "",
+      registration_number: typeof body.registrationNumber === "string" ? body.registrationNumber.trim() : "",
+      course: typeof body.course === "string" ? body.course.trim() : "",
+      academic_year: typeof body.academicYear === "string" ? body.academicYear.trim() : "",
+      current_semester: "V",
+    };
+    const requiredFields = [studentDetails.full_name, studentDetails.phone, studentDetails.father_name, studentDetails.mother_name, studentDetails.date_of_birth, studentDetails.gender, studentDetails.address, studentDetails.roll_number, studentDetails.registration_number, studentDetails.course, studentDetails.academic_year];
+    if (requiredFields.some(value => !value)) return NextResponse.json({ error: "Complete all required personal and academic details before applying." }, { status: 400 });
+    if (!/^\\d{10}$/.test(studentDetails.phone.replace(/\\D/g, ""))) return NextResponse.json({ error: "Enter a valid 10-digit mobile number." }, { status: 400 });
+    if (studentDetails.address.length > 500) return NextResponse.json({ error: "Address must be 500 characters or fewer." }, { status: 400 });
+
     if (!internshipId) return NextResponse.json({ error: "Choose an internship first." }, { status: 400 });
     if (coverNote.length > 2000) return NextResponse.json({ error: "Cover note must be 2,000 characters or fewer." }, { status: 400 });
+
+    const { error: detailsError } = await admin.from("profiles").update({
+      full_name: studentDetails.full_name, phone: studentDetails.phone.replace(/\\D/g, ""),
+      father_name: studentDetails.father_name, mother_name: studentDetails.mother_name,
+      date_of_birth: studentDetails.date_of_birth, gender: studentDetails.gender, address: studentDetails.address,
+      roll_number: studentDetails.roll_number, registration_number: studentDetails.registration_number,
+      course: studentDetails.course, academic_year: studentDetails.academic_year, current_semester: "V",
+      updated_at: new Date().toISOString(),
+    }).eq("id", authData.user.id);
+    if (detailsError) throw detailsError;
 
     const { data: internship, error: internshipError } = await admin
       .from("internships").select("id").eq("id", internshipId).eq("is_active", true).not("published_at", "is", null).maybeSingle();
