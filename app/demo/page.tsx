@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { getSupabaseBrowserClient } from "../../lib/supabase";
 
 type View = "student" | "nodal" | "admin";
+type DemoAccounts = { success: boolean; warning: string; college: string; nodal: {email:string;password:string;loginUrl:string;dashboardUrl:string}; student: {email:string;password:string;rollNumber:string;registrationNumber:string;loginUrl:string;dashboardUrl:string} };
 
 const preview = {
   student: {
@@ -50,6 +52,22 @@ const preview = {
 export default function DemoPage() {
   const [view, setView] = useState<View>("student");
   const [expanded, setExpanded] = useState(0);
+  const [accounts, setAccounts] = useState<DemoAccounts | null>(null);
+  const [preparing, setPreparing] = useState(false);
+  const [setupError, setSetupError] = useState("");
+  async function prepareDemo() {
+    setPreparing(true); setSetupError(""); setAccounts(null);
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) throw new Error("Pehle Admin Panel mein admin account se login karo, phir isi browser mein demo page kholo.");
+      const response = await fetch("/api/demo/prepare", { method: "POST", headers: { Authorization: `Bearer ${sessionData.session.access_token}` } });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Demo setup failed.");
+      setAccounts(result as DemoAccounts);
+    } catch (error) { setSetupError(error instanceof Error ? error.message : "Demo setup failed."); }
+    finally { setPreparing(false); }
+  }
   const data = preview[view];
   return (
     <main style={{minHeight:"100vh",background:"#f7f4fb",color:"#28163f",fontFamily:"Arial,Helvetica,sans-serif",padding:"28px 16px 56px"}}>
@@ -82,6 +100,19 @@ export default function DemoPage() {
               {expanded===i&&<div style={{padding:"0 15px 15px",color:"#71647e",fontSize:14,lineHeight:1.65}}>{description}<div style={{marginTop:10,background:"#fff7eb",color:"#85551a",borderRadius:8,padding:10,fontSize:12}}>Demo preview only · No production data is changed.</div></div>}
             </div>)}
           </div>
+        </section>
+        <section style={{background:"white",border:"1px solid #e9e0f1",borderRadius:20,padding:"clamp(18px,4vw,30px)",marginTop:18}}>
+          <div style={{fontSize:11,letterSpacing:1.8,fontWeight:800,color:"#8b55c4"}}>REAL PORTAL TEST ACCOUNTS</div>
+          <h2 style={{fontSize:24,margin:"8px 0"}}>Create Demo College + Student + Nodal</h2>
+          <p style={{color:"#71647e",lineHeight:1.65}}>Admin-only setup. It creates clearly labelled demo records in the connected portal database so you can test the actual login pages and dashboards. Existing real college/student records are not edited.</p>
+          <button onClick={prepareDemo} disabled={preparing} style={{background:preparing?"#9a82b4":"#6828b8",color:"white",padding:"13px 18px",borderRadius:10,border:0,fontWeight:800,cursor:preparing?"wait":"pointer"}}>{preparing?"Creating demo accounts…":"Create / reset demo accounts"}</button>
+          {setupError&&<p role="alert" style={{color:"#b42318",marginTop:12}}>{setupError}</p>}
+          {accounts&&<div style={{marginTop:18,display:"grid",gap:14}}>
+            <div style={{background:"#fff7eb",border:"1px solid #f0d7ad",padding:13,borderRadius:10,color:"#7b4b13",fontSize:13,lineHeight:1.6}}><strong>Demo-only credentials:</strong> Save these generated passwords now; they are shown once. Anyone with them can access demo data. Never use real student information here.</div>
+            <div style={{border:"1px solid #e8dff0",borderRadius:12,padding:15}}><h3 style={{margin:"0 0 8px"}}>Demo College</h3><p style={{margin:0}}>{accounts.college}</p></div>
+            <div style={{border:"1px solid #e8dff0",borderRadius:12,padding:15}}><h3 style={{margin:"0 0 8px"}}>Demo Nodal Officer</h3><p>Email: <code>{accounts.nodal.email}</code></p><p>Password: <code>{accounts.nodal.password}</code></p><p><a href={accounts.nodal.loginUrl} style={{color:"#6828b8",fontWeight:800}}>Staff Login →</a>　<a href={accounts.nodal.dashboardUrl} style={{color:"#6828b8",fontWeight:800}}>Nodal Panel →</a></p></div>
+            <div style={{border:"1px solid #e8dff0",borderRadius:12,padding:15}}><h3 style={{margin:"0 0 8px"}}>Demo Student</h3><p>Roll Number: <code>{accounts.student.rollNumber}</code></p><p>Registration Number: <code>{accounts.student.registrationNumber}</code></p><p>Password: <code>{accounts.student.password}</code></p><p><a href={accounts.student.loginUrl} style={{color:"#6828b8",fontWeight:800}}>Student Login →</a>　<a href={accounts.student.dashboardUrl} style={{color:"#6828b8",fontWeight:800}}>Student Dashboard →</a></p></div>
+          </div>}
         </section>
         <footer style={{display:"flex",gap:12,flexWrap:"wrap",alignItems:"center",justifyContent:"space-between",marginTop:20,color:"#776b83",fontSize:13}}>
           <span>Use this page to preview the intended workflow before testing real accounts.</span>
