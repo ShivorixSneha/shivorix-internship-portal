@@ -13,6 +13,7 @@ import "./nodal.css";
 type Institution = { id: string; name: string; university_name: string | null; city: string | null; state: string | null };
 type Student = { id: string; full_name: string | null; email: string | null; phone: string | null; college_id: string | null; institution_name: string | null; course: string | null; current_semester: string | null; created_at: string };
 type Application = { id: string; student_id: string; status: string; applied_at: string; profiles?: { full_name: string | null; email: string | null } | null; internships?: { title: string } | null };
+type Attendance = { id: string; student_id: string; institution_id: string; attendance_date: string; status: string; notes: string | null; updated_at: string; profiles?: { full_name: string | null; email: string | null } | null };
 
 const sections = [
   { label: "Dashboard", icon: LayoutDashboard, detail: "Assigned students and overall progress" },
@@ -36,6 +37,11 @@ export default function NodalOfficerDashboard() {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [students, setStudents] = useState<Student[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
+  const [attendanceRows, setAttendanceRows] = useState<Attendance[]>([]);
+  const [attendanceStudent, setAttendanceStudent] = useState("");
+  const [attendanceDate, setAttendanceDate] = useState("");
+  const [attendanceStatus, setAttendanceStatus] = useState("present");
+  const [attendanceNotes, setAttendanceNotes] = useState("");
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState("");
 
@@ -63,6 +69,8 @@ export default function NodalOfficerDashboard() {
           setInstitutions((result.institutions ?? []) as Institution[]);
           setStudents((result.students ?? []) as Student[]);
           setApplications((result.applications ?? []) as Application[]);
+          setAttendanceRows((result.attendance ?? []) as Attendance[]);
+          setAttendanceStudent((result.students?.[0]?.id) || "");
         }
       } catch (e) {
         if (alive) setError(e instanceof Error ? e.message : "Could not verify Nodal Officer access.");
@@ -94,8 +102,35 @@ export default function NodalOfficerDashboard() {
       setInstitutions((data.institutions ?? []) as Institution[]);
       setStudents((data.students ?? []) as Student[]);
       setApplications((data.applications ?? []) as Application[]);
+      setAttendanceRows((data.attendance ?? []) as Attendance[]);
       setNotice("Application status updated.");
     } catch (e) { setError(e instanceof Error ? e.message : "Application review failed."); }
+    finally { setBusy(false); }
+  }
+
+  async function saveAttendance(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setBusy(true); setError(""); setNotice("");
+    try {
+      const supabase = getSupabaseBrowserClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Your session expired. Please sign in again.");
+      const response = await fetch("/api/nodal/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "mark_attendance", studentId: attendanceStudent, date: attendanceDate, status: attendanceStatus, notes: attendanceNotes }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Attendance could not be saved.");
+      const refreshed = await fetch("/api/nodal/portal", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
+      const data = await refreshed.json();
+      if (!refreshed.ok) throw new Error(data.error || "Could not refresh attendance.");
+      setInstitutions((data.institutions ?? []) as Institution[]);
+      setStudents((data.students ?? []) as Student[]);
+      setApplications((data.applications ?? []) as Application[]);
+      setAttendanceRows((data.attendance ?? []) as Attendance[]);
+      setAttendanceNotes("");
+      setNotice("Attendance saved and audit record added.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Attendance could not be saved."); }
     finally { setBusy(false); }
   }
 
@@ -157,7 +192,7 @@ export default function NodalOfficerDashboard() {
               {active === "My Institution" ? <div className="nodal-data-list">{institutions.length ? institutions.map(college=><article className="nodal-data-card" key={college.id}><h3>{college.name}</h3><p>{college.university_name || "University not set"}</p><small>{[college.city,college.state].filter(Boolean).join(", ") || "Location not added"}</small><span>{students.filter(student=>student.college_id===college.id).length} assigned students</span></article>) : <div className="nodal-empty">No institution is assigned to your account yet. Ask the Admin to assign one.</div>}</div>
               : active === "Student Management" ? <div className="nodal-table-wrap"><table className="nodal-table"><thead><tr><th>Student</th><th>Email</th><th>Course / semester</th><th>Institution</th><th>Registered</th></tr></thead><tbody>{students.map(student=><tr key={student.id}><td><strong>{student.full_name || "Name not provided"}</strong><small>{student.phone || "Phone not provided"}</small></td><td>{student.email || "—"}</td><td>{[student.course,student.current_semester].filter(Boolean).join(" · ") || "—"}</td><td>{institutions.find(c=>c.id===student.college_id)?.name || student.institution_name || "—"}</td><td>{student.created_at ? new Date(student.created_at).toLocaleDateString() : "—"}</td></tr>)}</tbody></table>{students.length===0&&<div className="nodal-empty">No students are currently linked to your assigned institution.</div>}</div>
               : active === "Internship Applications" ? <div className="nodal-table-wrap"><table className="nodal-table"><thead><tr><th>Student</th><th>Internship</th><th>Applied</th><th>Current status</th><th>Review action</th></tr></thead><tbody>{applications.map(application=><tr key={application.id}><td><strong>{application.profiles?.full_name || "Student"}</strong><small>{application.profiles?.email || "—"}</small></td><td>{application.internships?.title || "—"}</td><td>{new Date(application.applied_at).toLocaleDateString()}</td><td><span className={`nodal-status ${application.status==="accepted"?"accepted":application.status==="rejected"?"rejected":"pending"}`}>{application.status.replace("_"," ")}</span></td><td><select aria-label={`Review application ${application.id}`} disabled={busy} value={application.status} onChange={e=>updateApplicationStatus(application.id,e.target.value)}><option value="draft">Draft</option><option value="submitted">Submitted</option><option value="under_review">Under review</option><option value="accepted">Accepted</option><option value="rejected">Rejected</option><option value="withdrawn">Withdrawn</option></select></td></tr>)}</tbody></table>{applications.length===0&&<div className="nodal-empty">No applications from students linked to your institution.</div>}</div>
-              : active === "Attendance & Activities" ? <div className="nodal-info-box"><CalendarCheck size={22}/><div><strong>Attendance management is not connected yet</strong><p>No attendance table currently exists in the portal schema. This control stays disabled until the database and audit trail are implemented.</p></div></div>
+              : active === "Attendance & Activities" ? <><form className="nodal-attendance-form" onSubmit={saveAttendance}><label>Student<select required value={attendanceStudent} onChange={e=>setAttendanceStudent(e.target.value)}><option value="">Choose student</option>{students.map(student=><option key={student.id} value={student.id}>{student.full_name || student.email || student.id}</option>)}</select></label><label>Date<input type="date" required value={attendanceDate} onChange={e=>setAttendanceDate(e.target.value)} max={new Date().toISOString().slice(0,10)} /></label><label>Status<select value={attendanceStatus} onChange={e=>setAttendanceStatus(e.target.value)}><option value="present">Present</option><option value="absent">Absent</option><option value="leave">Leave</option></select></label><label>Notes (optional)<input value={attendanceNotes} onChange={e=>setAttendanceNotes(e.target.value)} maxLength={500} placeholder="Reason or session note" /></label><button className="nodal-save-button" type="submit" disabled={busy || students.length===0}>{busy ? "Saving…" : "Save attendance"}</button></form><div className="nodal-table-wrap"><table className="nodal-table"><thead><tr><th>Date</th><th>Student</th><th>Status</th><th>Notes</th><th>Last updated</th></tr></thead><tbody>{attendanceRows.map(row=><tr key={row.id}><td>{row.attendance_date}</td><td><strong>{row.profiles?.full_name || "Student"}</strong><small>{row.profiles?.email || "—"}</small></td><td><span className={`nodal-status ${row.status==="present"?"accepted":row.status==="absent"?"rejected":"pending"}`}>{row.status}</span></td><td>{row.notes || "—"}</td><td>{row.updated_at ? new Date(row.updated_at).toLocaleDateString() : "—"}</td></tr>)}</tbody></table>{attendanceRows.length===0&&<div className="nodal-empty">No attendance records yet. Choose a student and date to record attendance.</div>}</div></>
               : <><div className="nodal-info-box"><ShieldCheck size={22}/><div><strong>{active} is not connected yet</strong><p>This section will only be enabled once its database structure and permission checks are implemented.</p></div></div><div className="nodal-setup-note"><strong>Not marked as complete</strong><p>Assignments, evaluations, documents, and notifications still need their own verified data workflows.</p></div></>}
             </section>}
           </>}
