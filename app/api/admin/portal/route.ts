@@ -154,6 +154,18 @@ export async function PATCH(request: Request) {
     if (!user) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
     const body = await request.json();
 
+    if (body.action === "update_college") {
+      const collegeId = typeof body.collegeId === "string" ? body.collegeId : "";
+      const name = typeof body.name === "string" ? body.name.trim() : "";
+      const university = typeof body.university === "string" ? body.university.trim() : "";
+      const city = typeof body.city === "string" ? body.city.trim() : "";
+      const state = typeof body.state === "string" ? body.state.trim() : "";
+      if (!collegeId || name.length < 2 || name.length > 200) return NextResponse.json({ error: "A valid institution name is required." }, { status: 400 });
+      const { data, error } = await client.from("colleges").update({ name, university_name: university || null, city: city || null, state: state || null, updated_at: new Date().toISOString() }).eq("id", collegeId).select("id").maybeSingle();
+      if (error || !data) return NextResponse.json({ error: "Institution details could not be updated." }, { status: 400 });
+      return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
+    }
+
     if (body.action === "application_status") {
       const id = typeof body.id === "string" ? body.id : "";
       const status = typeof body.status === "string" ? body.status : "";
