@@ -178,7 +178,7 @@ export default function StudentDashboard() {
       ["Internship Duration", internship?.duration_weeks ? `${internship.duration_weeks} weeks` : "As approved by college"],
       ["Required Hours / Credits", "120 Hours / 4 Credits"],
     ];
-    const rows = (items: [string, unknown][]) => items.map(([label, val]) => `<tr><th>${esc(label)}</th><td>${value(val)}</td></tr>`).join("");
+    const rows = (items: unknown[][]) => items.map(([label, val]) => `<tr><th>${esc(label)}</th><td>${value(val)}</td></tr>`).join("");
     const title = ({ application: "INTERNSHIP APPLICATION COPY", acceptance: "INTERNSHIP ACCEPTANCE LETTER", logbook: "SHIVORIX — INTERNSHIP LOG BOOK", completion: "INTERNSHIP COMPLETION CERTIFICATE", marksheet: "INTERNSHIP PERFORMANCE MARKSHEET" } as const)[kind];
     let body = "";
     if (kind === "application") {
