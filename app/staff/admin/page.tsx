@@ -17,13 +17,28 @@ type Application = { id: string; status: string; applied_at: string; profiles?: 
 
 const nav = [
   { label: "Overview", icon: LayoutDashboard },
-  { label: "Institutions", icon: Building2 },
-  { label: "Nodal Officers", icon: ShieldCheck },
+  { label: "SHIVORIX IPO", icon: BriefcaseBusiness },
+  { label: "Guidelines", icon: BookOpen },
   { label: "Students", icon: GraduationCap },
-  { label: "Internships", icon: BriefcaseBusiness },
   { label: "Applications", icon: ClipboardCheck },
+  { label: "Activities / Log Book", icon: Activity },
+  { label: "Colleges", icon: Building2 },
+  { label: "Nodal Officers", icon: ShieldCheck },
+  { label: "Internships", icon: BriefcaseBusiness },
+  { label: "Payments", icon: FileText },
+  { label: "Training", icon: BookOpen },
+  { label: "Assessments", icon: ClipboardCheck },
+  { label: "Final Test", icon: CheckCircle2 },
+  { label: "Assignments", icon: FileText },
+  { label: "Evaluations", icon: ClipboardCheck },
+  { label: "Certificate", icon: CheckCircle2 },
+  { label: "Documents", icon: FileText },
+  { label: "Reports", icon: Activity },
+  { label: "Settings", icon: ShieldCheck },
+  { label: "Audit Logs", icon: Activity },
+  { label: "Institutions", icon: Building2 },
   { label: "Documents & Reports", icon: FileText },
-  { label: "Settings & Access", icon: Activity },
+  { label: "Settings & Access", icon: ShieldCheck },
 ];
 
 export default function AdminDashboard() {
