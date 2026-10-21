@@ -115,7 +115,7 @@ export default function InternshipsPage() {
         <div className="domain-heading"><span>EXPLORE YOUR INTERESTS</span><h2>Which field interests you?</h2><p>These are example career areas—not active internship vacancies.</p></div>
         <div className="domain-grid">{domains.map((domain) => <article className="domain-card" key={domain.number}><span>{domain.number}</span><h3>{domain.title}</h3><p>{domain.detail}</p></article>)}</div>
       </section>
-      <footer className="opportunities-footer"><span>SHIVORIX · GROWTH · VISION · SUCCESS</span><div className="opportunities-contact"><a href="mailto:info.shivorix@gmail.com">info.shivorix@gmail.com</a><a href="https://wa.me/917654086807" target="_blank" rel="noreferrer">WhatsApp: +91 76540 86807</a></div><Link href="/">Back to homepage ↑</Link><div className="opportunities-legal"><span>© 2026 SHIVORIX. All rights reserved.</span><span>Founder: Sneha Gupta</span></div></footer>
+
     </main>
   );
 }
