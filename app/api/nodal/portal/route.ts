@@ -94,7 +94,7 @@ export async function POST(request: Request) {
       if (!["assignment", "evaluation", "document", "notification"].includes(recordType) || title.length < 2 || title.length > 180) {
         return NextResponse.json({ error: "Choose a record type and enter a title between 2 and 180 characters." }, { status: 400 });
       }
-      if (dueDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(dueDate)) return NextResponse.json({ error: "Due date is invalid." }, { status: 400 });
+      if (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return NextResponse.json({ error: "Due date is invalid." }, { status: 400 });
       if (resourceUrl) {
         try { const url = new URL(resourceUrl); if (!["https:", "http:"].includes(url.protocol)) throw new Error(); }
         catch { return NextResponse.json({ error: "Resource link must be a valid HTTP or HTTPS URL." }, { status: 400 }); }
