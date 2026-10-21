@@ -47,18 +47,18 @@ export default function AdminDashboard() {
 
   const loadData = useCallback(async () => {
     const supabase = getSupabaseBrowserClient();
-    const [p, c, i, a] = await Promise.all([
-      supabase.from("profiles").select("id,role,full_name,email,college_id,institution_name,course,created_at").order("created_at", { ascending: false }).limit(500),
-      supabase.from("colleges").select("id,name,university_name,city,state,nodal_officer_id").order("name"),
-      supabase.from("internships").select("id,title,mode,is_active,created_at").order("created_at", { ascending: false }).limit(100),
-      supabase.from("internship_applications").select("id,status,applied_at,profiles(full_name,email),internships(title)").order("applied_at", { ascending: false }).limit(100),
-    ]);
-    const firstError = p.error || c.error || i.error || a.error;
-    if (firstError) throw firstError;
-    setProfiles((p.data ?? []) as Profile[]);
-    setColleges((c.data ?? []) as College[]);
-    setInternships((i.data ?? []) as Internship[]);
-    setApplications((a.data ?? []) as unknown as Application[]);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error("Your session expired. Please sign in again.");
+    const response = await fetch("/api/admin/portal", {
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      cache: "no-store",
+    });
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.error || "Unable to load admin portal data.");
+    setProfiles((result.profiles ?? []) as Profile[]);
+    setColleges((result.colleges ?? []) as College[]);
+    setInternships((result.internships ?? []) as Internship[]);
+    setApplications((result.applications ?? []) as Application[]);
   }, []);
 
   useEffect(() => {
@@ -85,8 +85,15 @@ export default function AdminDashboard() {
     e.preventDefault(); setBusy(true); setError(""); setNotice("");
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error: insertError } = await supabase.from("colleges").insert({ name: collegeName.trim(), university_name: university.trim() || null, city: city.trim() || null, state: state.trim() || null });
-      if (insertError) throw insertError;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Your session expired. Please sign in again.");
+      const response = await fetch("/api/admin/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "create_college", name: collegeName, university, city, state }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not add institution.");
       setCollegeName(""); setUniversity(""); setCity(""); setState("");
       await loadData(); setNotice("Institution added successfully.");
     } catch (e) { setError(e instanceof Error ? e.message : "Could not add institution."); }
@@ -97,8 +104,15 @@ export default function AdminDashboard() {
     setBusy(true); setError(""); setNotice("");
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error: updateError } = await supabase.from("colleges").update({ nodal_officer_id: officerId || null, updated_at: new Date().toISOString() }).eq("id", collegeId);
-      if (updateError) throw updateError;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Your session expired. Please sign in again.");
+      const response = await fetch("/api/admin/portal", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "assign_officer", collegeId, officerId }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not assign Nodal Officer.");
       await loadData(); setNotice("Nodal Officer assignment updated.");
     } catch (e) { setError(e instanceof Error ? e.message : "Could not assign Nodal Officer."); }
     finally { setBusy(false); }
@@ -108,10 +122,15 @@ export default function AdminDashboard() {
     setBusy(true); setError(""); setNotice("");
     try {
       const supabase = getSupabaseBrowserClient();
-      const { error: updateError } = await supabase.from("internship_applications")
-        .update({ status, updated_at: new Date().toISOString() })
-        .eq("id", applicationId);
-      if (updateError) throw updateError;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("Your session expired. Please sign in again.");
+      const response = await fetch("/api/admin/portal", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ action: "application_status", id: applicationId, status }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Could not update application status.");
       await loadData();
       setNotice("Application status updated.");
     } catch (e) {
