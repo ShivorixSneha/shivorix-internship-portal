@@ -167,7 +167,7 @@ export default function AdminDashboard() {
       return '"' + text.replace(/"/g, '""') + '"';
     };
     const csv = [headers.map(escapeCell).join(","), ...rows.map(row => headers.map(key => escapeCell(row[key])).join(","))].join("\r\n");
-    const blob = new Blob(["\\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
+    const blob = new Blob(["\uFEFF", csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.href = url; link.download = filename; link.click();
