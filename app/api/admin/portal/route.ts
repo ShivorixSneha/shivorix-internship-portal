@@ -61,7 +61,20 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Officer contact details could not be loaded." }, { status: 503 });
     }
     const mobileByUserId = new Map((authUsers.users ?? []).map((authUser) => [authUser.id, typeof authUser.user_metadata?.mobile_number === "string" ? authUser.user_metadata.mobile_number : null]));
+    const { data: portalRecords, error: recordsError } = await client.from("nodal_portal_records")
+      .select("id,record_type,title,description,due_date,resource_url,institution_id,student_id,status,created_at")
+      .order("created_at", { ascending: false }).limit(500);
+    if (recordsError) {
+      console.error("Admin portal records query failed:", recordsError.message);
+      return NextResponse.json({ error: "Learning records could not be loaded." }, { status: 503 });
+    }
+    const { data: auditLogs, error: auditError } = await client.from("admin_audit_log")
+      .select("id,actor_id,target_profile_id,action,old_value,new_value,details,created_at")
+      .order("created_at", { ascending: false }).limit(200);
+    if (auditError) console.error("Admin audit log query failed:", auditError.message);
     return NextResponse.json({
+      records: portalRecords ?? [],
+      auditLogs: auditLogs ?? [],
       profiles: (profiles.data ?? []).map((profile) => ({ ...profile, mobile_number: mobileByUserId.get(profile.id) ?? null })),
       colleges: colleges.data ?? [],
       internships: internships.data ?? [],
@@ -123,6 +136,38 @@ export async function POST(request: Request) {
       if (auditError) console.error("Nodal Officer creation audit failed:", auditError.message);
       return NextResponse.json({ success: true, profileId: created.user.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
     }
+    if (body.action === "create_portal_record") {
+      const type = typeof body.recordType === "string" ? body.recordType : "";
+      const title = typeof body.title === "string" ? body.title.trim() : "";
+      const description = typeof body.description === "string" ? body.description.trim() : "";
+      const institutionId = typeof body.institutionId === "string" ? body.institutionId : "";
+      const dueDate = typeof body.dueDate === "string" && body.dueDate ? body.dueDate : null;
+      const resourceUrl = typeof body.resourceUrl === "string" ? body.resourceUrl.trim() : "";
+      const allowedTypes = ["assignment", "evaluation", "document", "notification", "training", "activity", "test", "certificate"];
+      if (!allowedTypes.includes(type) || title.length < 3 || title.length > 180 || description.length > 5000) {
+        return NextResponse.json({ error: "Choose a supported module and enter a valid title and description." }, { status: 400 });
+      }
+      if (resourceUrl && !/^https?:\\/\\//i.test(resourceUrl)) return NextResponse.json({ error: "Resource link must start with http:// or https://." }, { status: 400 });
+      if (institutionId) {
+        const { data: college, error: collegeError } = await client.from("colleges").select("id").eq("id", institutionId).maybeSingle();
+        if (collegeError || !college) return NextResponse.json({ error: "Choose a valid college." }, { status: 400 });
+      }
+      const { data, error } = await client.from("nodal_portal_records").insert({
+        record_type: type, title, description: description || null, institution_id: institutionId || null,
+        due_date: dueDate, resource_url: resourceUrl || null, status: "published", created_by: user.id,
+      }).select("id").single();
+      if (error || !data) {
+        console.error("Admin portal record create failed:", error?.message);
+        return NextResponse.json({ error: "This module item could not be saved." }, { status: 400 });
+      }
+      const { error: auditInsertError } = await client.from("admin_audit_log").insert({
+        actor_id: user.id, action: "portal_record_created", old_value: null,
+        new_value: { record_type: type, title, institution_id: institutionId || null },
+        details: { record_id: data.id },
+      });
+      if (auditInsertError) console.error("Portal record audit failed:", auditInsertError.message);
+      return NextResponse.json({ success: true, id: data.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    }
     if (body.action !== "create_college") {
       return NextResponse.json({ error: "Unsupported admin action." }, { status: 400 });
     }
@@ -154,6 +199,21 @@ export async function PATCH(request: Request) {
     if (!user) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
     const body = await request.json();
 
+    if (body.action === "update_portal_record") {
+      const recordId = typeof body.recordId === "string" ? body.recordId : "";
+      const title = typeof body.title === "string" ? body.title.trim() : "";
+      const description = typeof body.description === "string" ? body.description.trim() : "";
+      const dueDate = typeof body.dueDate === "string" && body.dueDate ? body.dueDate : null;
+      const resourceUrl = typeof body.resourceUrl === "string" ? body.resourceUrl.trim() : "";
+      const status = typeof body.status === "string" ? body.status : "published";
+      if (!recordId || title.length < 3 || title.length > 180 || description.length > 5000 || !["published", "draft", "archived"].includes(status)) return NextResponse.json({ error: "Check the record title and status." }, { status: 400 });
+      if (resourceUrl && !/^https?:\\/\\//i.test(resourceUrl)) return NextResponse.json({ error: "Resource link must start with http:// or https://." }, { status: 400 });
+      const { data, error } = await client.from("nodal_portal_records").update({ title, description: description || null, due_date: dueDate, resource_url: resourceUrl || null, status }).eq("id", recordId).select("id").maybeSingle();
+      if (error || !data) return NextResponse.json({ error: "Module item could not be updated." }, { status: 400 });
+      const { error: auditInsertError } = await client.from("admin_audit_log").insert({ actor_id: user.id, action: "portal_record_updated", old_value: null, new_value: { title, status }, details: { record_id: recordId } });
+      if (auditInsertError) console.error("Portal record update audit failed:", auditInsertError.message);
+      return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
+    }
     if (body.action === "update_college") {
       const collegeId = typeof body.collegeId === "string" ? body.collegeId : "";
       const name = typeof body.name === "string" ? body.name.trim() : "";
