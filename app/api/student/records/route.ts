@@ -13,7 +13,7 @@ function serviceClient() {
 export async function GET(request: Request) {
   try {
     const client = serviceClient();
-    const token = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "");
+    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
     if (!token) return NextResponse.json({ error: "Sign-in required." }, { status: 401 });
     const { data: authData, error: authError } = await client.auth.getUser(token);
     if (authError || !authData.user) return NextResponse.json({ error: "Session is invalid. Please sign in again." }, { status: 401 });
