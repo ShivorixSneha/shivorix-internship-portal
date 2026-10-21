@@ -55,8 +55,14 @@ export async function GET(request: Request) {
       console.error("Admin portal data query failed:", error.message);
       return NextResponse.json({ error: "Portal data could not be loaded. Check the database schema and server configuration." }, { status: 503 });
     }
+    const { data: authUsers, error: authUsersError } = await client.auth.admin.listUsers({ page: 1, perPage: 1000 });
+    if (authUsersError) {
+      console.error("Admin portal user metadata query failed:", authUsersError.message);
+      return NextResponse.json({ error: "Officer contact details could not be loaded." }, { status: 503 });
+    }
+    const mobileByUserId = new Map((authUsers.users ?? []).map((authUser) => [authUser.id, typeof authUser.user_metadata?.mobile_number === "string" ? authUser.user_metadata.mobile_number : null]));
     return NextResponse.json({
-      profiles: profiles.data ?? [],
+      profiles: (profiles.data ?? []).map((profile) => ({ ...profile, mobile_number: mobileByUserId.get(profile.id) ?? null })),
       colleges: colleges.data ?? [],
       internships: internships.data ?? [],
       applications: applications.data ?? [],
@@ -89,11 +95,13 @@ export async function POST(request: Request) {
       const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
       const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
       const password = typeof body.password === "string" ? body.password : "";
+      const mobileNumber = typeof body.mobileNumber === "string" ? body.mobileNumber.trim() : "";
       if (fullName.length < 2 || fullName.length > 100) return NextResponse.json({ error: "Officer name must be between 2 and 100 characters." }, { status: 400 });
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return NextResponse.json({ error: "Enter a valid staff email address." }, { status: 400 });
+      if (!/^[6-9][0-9]{9}$/.test(mobileNumber)) return NextResponse.json({ error: "Enter a valid 10-digit Indian mobile number." }, { status: 400 });
       if (password.length < 8 || password.length > 72) return NextResponse.json({ error: "Temporary password must be between 8 and 72 characters." }, { status: 400 });
       const { data: created, error: createError } = await client.auth.admin.createUser({
-        email, password, email_confirm: true, user_metadata: { full_name: fullName, provisioned_by: "admin" },
+        email, password, email_confirm: true, user_metadata: { full_name: fullName, mobile_number: mobileNumber, provisioned_by: "admin" },
       });
       if (createError || !created.user) {
         const message = createError?.message.toLowerCase().includes("already") ? "An account with this email already exists. Use a different email or contact the administrator." : "Could not create the staff login. Check the email and server configuration.";
@@ -110,7 +118,7 @@ export async function POST(request: Request) {
       const { error: auditError } = await client.from("admin_audit_log").insert({
         actor_id: user.id, target_profile_id: created.user.id, action: "nodal_officer_account_created",
         old_value: null, new_value: { role: "nodal_officer" },
-        details: { target_email: email, target_name: fullName },
+        details: { target_email: email, target_name: fullName, target_mobile: mobileNumber },
       });
       if (auditError) console.error("Nodal Officer creation audit failed:", auditError.message);
       return NextResponse.json({ success: true, profileId: created.user.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
