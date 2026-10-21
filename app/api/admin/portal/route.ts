@@ -169,6 +169,12 @@ export async function PATCH(request: Request) {
         const { data: officer, error: officerError } = await client.from("profiles")
           .select("id").eq("id", officerId).eq("role", "nodal_officer").maybeSingle();
         if (officerError || !officer) return NextResponse.json({ error: "Choose a valid Nodal Officer account." }, { status: 400 });
+        const { data: existingAssignments, error: assignmentError } = await client.from("colleges")
+          .select("id,name").eq("nodal_officer_id", officerId).neq("id", collegeId).limit(1);
+        if (assignmentError) return NextResponse.json({ error: "Could not verify this officer's current college assignment." }, { status: 503 });
+        if (existingAssignments?.length) {
+          return NextResponse.json({ error: "This Nodal Officer is already assigned to another college. Remove the existing assignment first." }, { status: 409 });
+        }
       }
       const { data, error } = await client.from("colleges")
         .update({ nodal_officer_id: officerId || null, updated_at: new Date().toISOString() })
