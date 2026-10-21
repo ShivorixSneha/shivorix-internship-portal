@@ -85,6 +85,36 @@ export async function POST(request: Request) {
     const user = await requireAdmin(request, client);
     if (!user) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
     const body = await request.json();
+    if (body.action === "create_nodal_officer") {
+      const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
+      const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
+      const password = typeof body.password === "string" ? body.password : "";
+      if (fullName.length < 2 || fullName.length > 100) return NextResponse.json({ error: "Officer name must be between 2 and 100 characters." }, { status: 400 });
+      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254) return NextResponse.json({ error: "Enter a valid staff email address." }, { status: 400 });
+      if (password.length < 8 || password.length > 72) return NextResponse.json({ error: "Temporary password must be between 8 and 72 characters." }, { status: 400 });
+      const { data: created, error: createError } = await client.auth.admin.createUser({
+        email, password, email_confirm: true, user_metadata: { full_name: fullName, provisioned_by: "admin" },
+      });
+      if (createError || !created.user) {
+        const message = createError?.message.toLowerCase().includes("already") ? "An account with this email already exists. Use a different email or contact the administrator." : "Could not create the staff login. Check the email and server configuration.";
+        return NextResponse.json({ error: message }, { status: 400 });
+      }
+      const { error: profileError } = await client.from("profiles").upsert({
+        id: created.user.id, role: "nodal_officer", full_name: fullName, email,
+      }, { onConflict: "id" });
+      if (profileError) {
+        await client.auth.admin.deleteUser(created.user.id);
+        console.error("Nodal Officer profile creation failed:", profileError.message);
+        return NextResponse.json({ error: "Login was rolled back because the Nodal Officer profile could not be created. Check the profiles schema and role guard." }, { status: 500 });
+      }
+      const { error: auditError } = await client.from("admin_audit_log").insert({
+        actor_id: user.id, target_profile_id: created.user.id, action: "nodal_officer_account_created",
+        old_value: null, new_value: { role: "nodal_officer" },
+        details: { target_email: email, target_name: fullName },
+      });
+      if (auditError) console.error("Nodal Officer creation audit failed:", auditError.message);
+      return NextResponse.json({ success: true, profileId: created.user.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    }
     if (body.action !== "create_college") {
       return NextResponse.json({ error: "Unsupported admin action." }, { status: 400 });
     }
