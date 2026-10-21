@@ -28,4 +28,4 @@ export default function Home(){return <main className="page"><header className="
     </div>
   </div><div className="contact-actions"><Link className="primary" href="/register">Register now ↗</Link><a className="secondary" href="https://www.shivorixai.com/home" target="_blank" rel="noreferrer">Official website ↗</a></div></div>
 </section>
-<footer className="site-footer"><span>SHIVORIX · GROWTH · VISION · SUCCESS</span><a href="https://www.shivorixai.com/home" target="_blank" rel="noreferrer">Official website ↗</a><a href="#home">Back to top ↑</a><div className="footer-legal"><span>© 2026 SHIVORIX. All rights reserved.</span><span>Founder: Sneha Gupta</span></div></footer></main>}
+</main>}
