@@ -190,6 +190,25 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
 
+    if (body.action === "update_student_profile") {
+      const profileId = typeof body.profileId === "string" ? body.profileId : "";
+      const fullName = typeof body.fullName === "string" ? body.fullName.trim() : "";
+      const course = typeof body.course === "string" ? body.course.trim() : "";
+      const collegeId = typeof body.collegeId === "string" ? body.collegeId : "";
+      if (!profileId || fullName.length < 2 || fullName.length > 100 || course.length > 160) return NextResponse.json({ error: "Check the student name and course details." }, { status: 400 });
+      const { data: target, error: targetError } = await client.from("profiles").select("id,role,full_name,email,college_id,course").eq("id", profileId).maybeSingle();
+      if (targetError || !target || target.role !== "student") return NextResponse.json({ error: "Student profile not found." }, { status: 404 });
+      if (collegeId) {
+        const { data: college, error: collegeError } = await client.from("colleges").select("id").eq("id", collegeId).maybeSingle();
+        if (collegeError || !college) return NextResponse.json({ error: "Choose a valid institution." }, { status: 400 });
+      }
+      const { error } = await client.from("profiles").update({ full_name: fullName, course: course || null, college_id: collegeId || null, updated_at: new Date().toISOString() }).eq("id", profileId);
+      if (error) return NextResponse.json({ error: "Student profile could not be updated." }, { status: 400 });
+      const { error: auditError } = await client.from("admin_audit_log").insert({ actor_id: user.id, target_profile_id: profileId, action: "student_profile_updated", old_value: { full_name: target.full_name, course: target.course, college_id: target.college_id }, new_value: { full_name: fullName, course: course || null, college_id: collegeId || null }, details: { target_email: target.email } });
+      if (auditError) console.error("Student profile audit failed:", auditError.message);
+      return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
+    }
+
     if (body.action === "application_status") {
       const id = typeof body.id === "string" ? body.id : "";
       const status = typeof body.status === "string" ? body.status : "";
