@@ -58,7 +58,7 @@ export async function GET(request: Request) {
 
     const { data: records, error: recordsError } = institutionIds.length
       ? await client.from("nodal_portal_records")
-          .select("id,institution_id,student_id,record_type,title,description,status,due_date,resource_url,created_at,updated_at,profiles:student_id(full_name,email)")
+          .select("id,institution_id,student_id,record_type,title,description,status,due_date,resource_url,created_at,updated_at")
           .in("institution_id", institutionIds).order("created_at", { ascending: false }).limit(500)
       : { data: [], error: null };
     if (recordsError) throw recordsError;
