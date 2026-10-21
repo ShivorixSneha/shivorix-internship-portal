@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
-  Activity, Bell, BookOpen, BriefcaseBusiness, CalendarCheck, CheckCircle2,
+  Activity, Award, Bell, BookOpen, BriefcaseBusiness, CalendarCheck, CheckCircle2,
   ClipboardCheck, ClipboardList, FileText, FolderOpen, GraduationCap,
   LayoutDashboard, LogOut, Menu, ShieldCheck, Users, X, Building2,
 } from "lucide-react";
@@ -14,13 +14,18 @@ type Institution = { id: string; name: string; university_name: string | null; c
 type Student = { id: string; full_name: string | null; email: string | null; phone: string | null; college_id: string | null; institution_name: string | null; course: string | null; current_semester: string | null; created_at: string };
 type Application = { id: string; student_id: string; status: string; applied_at: string; profiles?: { full_name: string | null; email: string | null } | null; internships?: { title: string } | null };
 type Attendance = { id: string; student_id: string; institution_id: string; attendance_date: string; status: string; notes: string | null; updated_at: string; profiles?: { full_name: string | null; email: string | null } | null };
-type PortalRecord = { id: string; student_id: string | null; institution_id: string; record_type: "assignment" | "evaluation" | "document" | "notification"; title: string; description: string | null; status: string; due_date: string | null; resource_url: string | null; created_at: string };
+type PortalRecord = { id: string; student_id: string | null; institution_id: string; record_type: "assignment" | "evaluation" | "document" | "notification" | "training" | "activity" | "test" | "certificate"; title: string; description: string | null; status: string; due_date: string | null; resource_url: string | null; created_at: string };
 
 const sections = [
   { label: "Dashboard", icon: LayoutDashboard, detail: "Assigned students and overall progress" },
   { label: "My Institution", icon: Building2, detail: "Your assigned college or institution" },
   { label: "Student Management", icon: Users, detail: "View students assigned to your institution" },
   { label: "Internship Applications", icon: BriefcaseBusiness, detail: "Review applications and submitted documents" },
+  { label: "Online Training", icon: BookOpen, detail: "Share learning resources and training links" },
+  { label: "Activities", icon: Activity, detail: "Publish student activity instructions" },
+  { label: "My Tests", icon: ClipboardList, detail: "Share tests and preparation details" },
+  { label: "Final Test", icon: GraduationCap, detail: "Share final test information" },
+  { label: "Certificates", icon: Award, detail: "Share certificate links and completion documents" },
   { label: "Attendance & Activities", icon: CalendarCheck, detail: "Mark attendance and monitor student activity" },
   { label: "Assignments & Projects", icon: FileText, detail: "Track student submissions" },
   { label: "Assessments & Evaluation", icon: ClipboardList, detail: "View results and evaluations" },
@@ -258,6 +263,11 @@ export default function NodalOfficerDashboard() {
                   "Assessments & Evaluation": { type: "evaluation", heading: "Add evaluation", help: "Record an assessment or evaluation item for your institution.", create: "Add evaluation" },
                   "Documents & Reports": { type: "document", heading: "Share a document link", help: "Add a secure HTTPS/HTTP link to a document. File uploads are not enabled here.", create: "Save document link" },
                   "Notifications": { type: "notification", heading: "Publish institution notice", help: "Publish a notice for students in your assigned institution.", create: "Publish notice" },
+                  "Online Training": { type: "training", heading: "Share training resource", help: "Add a training module, course link, or learning resource.", create: "Save training resource" },
+                  "Activities": { type: "activity", heading: "Publish activity", help: "Share an activity brief or participation instructions.", create: "Publish activity" },
+                  "My Tests": { type: "test", heading: "Add test", help: "Share a test title, instructions, due date, and optional resource link.", create: "Add test" },
+                  "Final Test": { type: "test", heading: "Add final test", help: "Share final test instructions and an optional preparation link.", create: "Add final test" },
+                  "Certificates": { type: "certificate", heading: "Share certificate link", help: "Add a certificate or completion-document URL. Uploads are not enabled here.", create: "Save certificate link" },
                 };
                 const current = config[active];
                 if (!current) return <div className="nodal-empty">This section is unavailable.</div>;
@@ -267,11 +277,11 @@ export default function NodalOfficerDashboard() {
                     <label>Title *<input required minLength={2} maxLength={180} value={recordTitle} onChange={e=>setRecordTitle(e.target.value)} placeholder={current.type === "notification" ? "e.g. Internship orientation on Friday" : "Enter a clear title"} /></label>
                     {current.type !== "notification" && <label>Student (optional)<select value={recordStudent} onChange={e=>setRecordStudent(e.target.value)}><option value="">All students / institution-wide</option>{students.map(student=><option key={student.id} value={student.id}>{student.full_name || student.email || student.id}</option>)}</select></label>}
                     {current.type !== "notification" && <label>Due date (optional)<input type="date" value={recordDueDate} onChange={e=>setRecordDueDate(e.target.value)} /></label>}
-                    {current.type === "document" && <label>Document URL *<input type="url" required value={recordUrl} onChange={e=>setRecordUrl(e.target.value)} placeholder="https://…" /></label>}
+                    {["document","certificate","training","test"].includes(current.type) && <label>{current.type === "certificate" ? "Certificate URL *" : current.type === "training" ? "Training link (optional)" : current.type === "test" ? "Test resource link (optional)" : "Document URL *"}<input type="url" required={current.type === "document" || current.type === "certificate"} value={recordUrl} onChange={e=>setRecordUrl(e.target.value)} placeholder="https://…" /></label>}
                     <label>Description / details<textarea maxLength={5000} rows={3} value={recordDescription} onChange={e=>setRecordDescription(e.target.value)} placeholder="Add instructions or context (optional)" /></label>
                     <button className="nodal-save-button" type="submit" disabled={busy || institutions.length===0}>{busy ? "Saving…" : current.create}</button>
                   </form>
-                  <div className="nodal-table-wrap"><table className="nodal-table"><thead><tr><th>Title / details</th><th>Student</th><th>Due date</th>{current.type==="document"&&<th>Link</th>}<th>Status</th><th>Update</th></tr></thead><tbody>{visibleRecords.map(record=><tr key={record.id}><td><strong>{record.title}</strong><small>{record.description || "—"}</small></td><td>{students.find(student=>student.id===record.student_id)?.full_name || (record.student_id ? "Student" : "All students")}</td><td>{record.due_date || "—"}</td>{current.type==="document"&&<td>{record.resource_url ? <a href={record.resource_url} target="_blank" rel="noreferrer">Open link ↗</a> : "—"}</td>}<td><span className={`nodal-status ${record.status==="completed"||record.status==="published"?"accepted":record.status==="submitted"?"pending":"pending"}`}>{record.status.replace("_"," ")}</span></td><td><select aria-label={`Update status for ${record.title}`} disabled={busy} value={record.status} onChange={e=>updatePortalRecord(record.id,e.target.value)}><option value="open">Open</option><option value="in_progress">In progress</option><option value="submitted">Submitted</option><option value="completed">Completed</option><option value="published">Published</option></select></td></tr>)}</tbody></table>{visibleRecords.length===0&&<div className="nodal-empty">No records yet. Use the form above to add the first one.</div>}</div>
+                  <div className="nodal-table-wrap"><table className="nodal-table"><thead><tr><th>Title / details</th><th>Student</th><th>Due date</th>{["document","certificate","training","test"].includes(current.type)&&<th>Link</th>}<th>Status</th><th>Update</th></tr></thead><tbody>{visibleRecords.map(record=><tr key={record.id}><td><strong>{record.title}</strong><small>{record.description || "—"}</small></td><td>{students.find(student=>student.id===record.student_id)?.full_name || (record.student_id ? "Student" : "All students")}</td><td>{record.due_date || "—"}</td>{current.type==="document"&&<td>{record.resource_url ? <a href={record.resource_url} target="_blank" rel="noreferrer">Open link ↗</a> : "—"}</td>}<td><span className={`nodal-status ${record.status==="completed"||record.status==="published"?"accepted":record.status==="submitted"?"pending":"pending"}`}>{record.status.replace("_"," ")}</span></td><td><select aria-label={`Update status for ${record.title}`} disabled={busy} value={record.status} onChange={e=>updatePortalRecord(record.id,e.target.value)}><option value="open">Open</option><option value="in_progress">In progress</option><option value="submitted">Submitted</option><option value="completed">Completed</option><option value="published">Published</option></select></td></tr>)}</tbody></table>{visibleRecords.length===0&&<div className="nodal-empty">No records yet. Use the form above to add the first one.</div>}</div>
                 </>;
               })()}</>}
             </section>}
