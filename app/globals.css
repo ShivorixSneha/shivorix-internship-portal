@@ -391,3 +391,16 @@ a{color:inherit}
  .auth-visual-panel>.auth-visual-logo img{width:64px!important;height:64px!important;min-width:64px!important;min-height:64px!important;max-width:64px!important;max-height:64px!important}
  .auth-card-register .auth-main-content .auth-form-row{grid-template-columns:1fr!important}
 }
+
+
+/* Internship application details modal */
+.application-modal-backdrop{position:fixed;inset:0;z-index:1000;background:rgba(24,14,44,.64);backdrop-filter:blur(5px);display:flex;align-items:center;justify-content:center;padding:18px;overflow-y:auto}
+.application-modal{position:relative;width:min(760px,100%);max-height:calc(100vh - 36px);overflow-y:auto;background:#fff;border-radius:20px;padding:28px;box-shadow:0 25px 90px rgba(20,10,40,.3)}
+.application-modal h2{font-size:26px;color:#39205e;margin:10px 0 6px}.application-modal>p{color:#71677e;font-size:14px;line-height:1.6;margin:0 0 18px}
+.application-modal-close{position:absolute;right:16px;top:12px;border:0;background:#f3eff8;border-radius:50%;width:36px;height:36px;font-size:25px;cursor:pointer;color:#4c168c}
+.application-details-form{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.application-details-form label{display:grid;gap:6px;font-size:12px;font-weight:700;color:#49375f;min-width:0}
+.application-details-form input,.application-details-form select,.application-details-form textarea{width:100%;box-sizing:border-box;border:1px solid #ded5e9;border-radius:9px;padding:11px 12px;font:inherit;font-weight:400;color:#2b2340;background:#fff;min-width:0}
+.application-details-form input:focus,.application-details-form select:focus,.application-details-form textarea:focus{outline:2px solid #d6b9fa;border-color:#7d42c5}
+.application-full-width{grid-column:1/-1}.application-modal-summary{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#f7f1ff;border:1px solid #e6d5fb;border-radius:10px;padding:12px;color:#4c168c}.application-modal-summary span{font-size:12px}
+@media(max-width:600px){.application-modal{padding:22px 16px}.application-details-form{grid-template-columns:1fr}.application-full-width{grid-column:auto}.application-modal-summary{display:grid}}
