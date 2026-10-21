@@ -162,3 +162,13 @@
 .portal-record-link{display:inline-flex;margin-top:9px;color:#6d28d9;font-size:11px;font-weight:850;text-decoration:none}
 .portal-record-link:hover{text-decoration:underline}
 @media(max-width:560px){.portal-record-item{flex-direction:column;gap:10px}}
+
+/* SHIVORIX brand palette shared with the public and staff workspaces */
+.portal-shell{--portal-navy:#201538;--portal-blue:#6d28d9;--portal-ink:#251442;--portal-muted:#766b87;--portal-line:#ebe4f4;background:#fbf9ff;color:#251442}
+.portal-sidebar{background:linear-gradient(180deg,#201538 0%,#2b174b 100%)}
+.portal-nav-item.active{background:linear-gradient(100deg,#6d28d9,#8b3dcb 68%,#f0782e);box-shadow:0 7px 18px #6426b52b}
+.portal-welcome{background:radial-gradient(ellipse at 90% 0%,#f0782e38 0,transparent 35%),linear-gradient(112deg,#201538 0%,#35205c 58%,#6426b5 100%)}
+.portal-primary-btn{border-color:#6d28d9;background:linear-gradient(110deg,#6d28d9,#8b3dcb 68%,#f0782e);box-shadow:0 5px 14px #6426b522}
+.portal-page-icon{background:#f0e6ff;color:#6d28d9;border-color:#e5d2fa}
+.portal-stat-icon.blue,.portal-stat-icon.violet{background:#f0e6ff;color:#6d28d9}
+.portal-record-link{color:#6d28d9}
