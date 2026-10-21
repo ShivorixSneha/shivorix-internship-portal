@@ -169,8 +169,7 @@ export default function StudentDashboard() {
     const status = kind === "acceptance" ? (accepted ? "APPROVED APPLICATION" : "DRAFT — NOT ISSUED")
       : kind === "completion" ? (completed ? "COMPLETION RECORD FOUND" : "DRAFT — NOT ISSUED")
       : kind === "marksheet" ? (evaluated ? "EVALUATION RECORD FOUND" : "DRAFT — MARKS PENDING") : "STUDENT COPY";
-    const attendanceRows = studentAttendance.length ? studentAttendance.map((entry, index) => `<tr><td>${index + 1}</td><td>${value(new Date(entry.attendance_date + "T00:00:00").toLocaleDateString("en-IN"))}</td><td>${value(entry.notes)}</td><td>As recorded by institution</td><td>Not recorded</td><td>${value(entry.status)}</td></tr>`).join("") : '<tr><td colspan="6">No attendance entries have been recorded yet.</td></tr>';
-    const details = [
+    const details: [string, unknown][] = [
       ["Student Name", profile.full_name], ["Email", profile.email], ["Mobile", profile.phone],
       ["University Registration Number", profile.registration_number], ["College Roll Number", profile.roll_number],
       ["College / Institution", profile.institution_name], ["Programme / Department", profile.course],
