@@ -14,3 +14,21 @@
 @media(max-width:760px){.admin-sidebar{position:fixed;z-index:30;left:0;top:0;bottom:0;width:min(290px,86vw);height:100dvh;transform:translateX(-105%);transition:transform .2s}.admin-sidebar.is-open{transform:translateX(0)}.admin-scrim{display:block;position:fixed;z-index:29;inset:0;border:0;background:#0b1229a6}.admin-close{display:block;margin-left:auto;border:0;background:transparent;color:#fff}.admin-topbar{min-height:67px;padding:0 14px}.admin-menu{display:grid;place-items:center}.admin-user>div,.admin-user>svg{display:none}.admin-content{padding:16px 13px}.admin-welcome{padding:22px 19px}.admin-welcome-mark{display:none}.admin-stats{gap:9px}.admin-stats>button{padding:13px;gap:8px}.admin-stats strong{font-size:22px}.admin-overview-grid{grid-template-columns:1fr}.admin-panel{padding:15px}.admin-overview-grid .admin-panel{padding:15px}.admin-form{grid-template-columns:1fr}.admin-section-head h2{font-size:18px}.admin-footer{flex-direction:column}.admin-table th,.admin-table td{padding:12px 11px}}
 
 .admin-action-group{display:flex;align-items:center;gap:9px;flex-wrap:wrap}.admin-review-cell{display:grid;gap:7px;min-width:150px}.admin-review-cell select{min-width:150px!important}.admin-report-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}.admin-report-actions .admin-primary{align-self:auto}
+
+/* SHIVORIX brand palette: unify staff workspace with the public site */
+:root{--admin-ink:#201538;--admin-muted:#766b87;--admin-line:#ebe4f4;--admin-blue:#6d28d9}
+.admin-shell{background:#fbf9ff;color:#201538}
+.admin-sidebar{background:#201538}
+.admin-nav-item.active{background:linear-gradient(110deg,#6d28d9,#8b3dcb 68%,#f0782e);box-shadow:0 7px 18px #6426b52b}
+.admin-welcome{background:radial-gradient(ellipse at 95% 0%,#f0782e36,transparent 32%),linear-gradient(115deg,#201538,#35205c 66%,#6426b5)}
+.admin-kicker{color:#e7caff}
+.admin-section-head>div>span{color:#6d28d9}
+.admin-user>span{background:#f0e6ff;color:#6d28d9}
+.admin-user>svg{color:#6d28d9}
+.admin-refresh,.admin-panel-head button{color:#6d28d9}
+.admin-primary{background:linear-gradient(100deg,#6d28d9,#8b3dcb 68%,#f0782e)}
+.admin-form input:focus,.admin-table select:focus{border-color:#9b69e8;box-shadow:0 0 0 3px #8b3dcb1c}
+.admin-count,.admin-feature-icon{background:#f0e6ff;color:#6d28d9}
+.admin-stats>button:hover{border-color:#d7bdf6}
+.admin-shortcuts button,.admin-shortcuts a{color:#6d28d9}
+.admin-shortcuts button:hover,.admin-shortcuts a:hover{background:#fcf8ff;border-color:#e5d2fa}
