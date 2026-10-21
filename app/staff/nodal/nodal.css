@@ -25,3 +25,5 @@
 .nodal-info-box{background:#f7f0ff;color:#6d28d9}
 
 .nodal-attendance-form textarea{box-sizing:border-box;width:100%;min-height:80px;padding:10px;border:1px solid #dfe4f2;border-radius:8px;background:#fff;color:#26324c;font:inherit;font-size:11px;resize:vertical}.nodal-record-help{margin:0;color:var(--nodal-muted);font-size:11px;line-height:1.7}.nodal-table td a{color:#6d28d9;font-weight:800;text-decoration:none}.nodal-table td a:hover{text-decoration:underline}
+
+.nodal-table input{box-sizing:border-box;width:150px;max-width:220px;min-height:34px;padding:8px;border:1px solid #dfe4f2;border-radius:8px;background:#fff;color:#26324c;font:inherit;font-size:10px}.nodal-table .nodal-save-button{display:block;margin-top:6px;min-height:30px;padding:7px 9px}
