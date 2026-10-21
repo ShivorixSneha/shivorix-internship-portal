@@ -56,12 +56,20 @@ export async function GET(request: Request) {
       : { data: [], error: null };
     if (attendanceError) throw attendanceError;
 
+    const { data: records, error: recordsError } = institutionIds.length
+      ? await client.from("nodal_portal_records")
+          .select("id,institution_id,student_id,record_type,title,description,status,due_date,resource_url,created_at,updated_at,profiles:student_id(full_name,email)")
+          .in("institution_id", institutionIds).order("created_at", { ascending: false }).limit(500)
+      : { data: [], error: null };
+    if (recordsError) throw recordsError;
+
     return NextResponse.json({
       profile: { full_name: auth.profile.full_name, email: auth.profile.email },
       institutions: institutions ?? [],
       students: students ?? [],
       applications: applications ?? [],
       attendance: attendance ?? [],
+      records: records ?? [],
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Nodal portal GET failed:", error);
@@ -75,6 +83,45 @@ export async function POST(request: Request) {
     const auth = await requireNodal(request, client);
     if (!auth) return NextResponse.json({ error: "Nodal Officer access required." }, { status: 403 });
     const body = await request.json();
+    if (body.action === "create_record") {
+      const recordType = typeof body.recordType === "string" ? body.recordType : "";
+      const title = typeof body.title === "string" ? body.title.trim() : "";
+      const description = typeof body.description === "string" ? body.description.trim().slice(0, 5000) : "";
+      const studentId = typeof body.studentId === "string" && body.studentId ? body.studentId : null;
+      const dueDate = typeof body.dueDate === "string" && body.dueDate ? body.dueDate : null;
+      const resourceUrl = typeof body.resourceUrl === "string" && body.resourceUrl.trim() ? body.resourceUrl.trim().slice(0, 2048) : null;
+      const status = recordType === "notification" ? "published" : "open";
+      if (!["assignment", "evaluation", "document", "notification"].includes(recordType) || title.length < 2 || title.length > 180) {
+        return NextResponse.json({ error: "Choose a record type and enter a title between 2 and 180 characters." }, { status: 400 });
+      }
+      if (dueDate && !/^\\d{4}-\\d{2}-\\d{2}$/.test(dueDate)) return NextResponse.json({ error: "Due date is invalid." }, { status: 400 });
+      if (resourceUrl) {
+        try { const url = new URL(resourceUrl); if (!["https:", "http:"].includes(url.protocol)) throw new Error(); }
+        catch { return NextResponse.json({ error: "Resource link must be a valid HTTP or HTTPS URL." }, { status: 400 }); }
+      }
+      const { data: assignedInstitutions, error: assignedError } = await client.from("colleges")
+        .select("id").eq("nodal_officer_id", auth.user.id);
+      if (assignedError) throw assignedError;
+      const institutionIds = (assignedInstitutions ?? []).map((item) => item.id);
+      if (!institutionIds.length) return NextResponse.json({ error: "No institution is assigned to this account." }, { status: 403 });
+      const institutionId = typeof body.institutionId === "string" && institutionIds.includes(body.institutionId)
+        ? body.institutionId : institutionIds[0];
+      if (studentId) {
+        const { data: student, error: studentError } = await client.from("profiles")
+          .select("id").eq("id", studentId).eq("role", "student").eq("college_id", institutionId).maybeSingle();
+        if (studentError || !student) return NextResponse.json({ error: "Choose a student from your assigned institution." }, { status: 400 });
+      }
+      const { data: record, error: insertError } = await client.from("nodal_portal_records").insert({
+        institution_id: institutionId, student_id: studentId, record_type: recordType,
+        title, description: description || null, status, due_date: dueDate,
+        resource_url: resourceUrl, created_by: auth.user.id,
+      }).select("id").single();
+      if (insertError) {
+        console.error("Nodal record create failed:", insertError.message);
+        return NextResponse.json({ error: "Record could not be saved." }, { status: 400 });
+      }
+      return NextResponse.json({ success: true, id: record.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
+    }
     if (body.action !== "mark_attendance") {
       return NextResponse.json({ error: "Unsupported Nodal Officer action." }, { status: 400 });
     }
@@ -133,6 +180,23 @@ export async function PATCH(request: Request) {
     const auth = await requireNodal(request, client);
     if (!auth) return NextResponse.json({ error: "Nodal Officer access required." }, { status: 403 });
     const body = await request.json();
+    if (body.action === "update_record") {
+      const recordId = typeof body.recordId === "string" ? body.recordId : "";
+      const status = typeof body.status === "string" ? body.status : "";
+      if (!recordId || !["open", "in_progress", "submitted", "completed", "published"].includes(status)) {
+        return NextResponse.json({ error: "Record or status is invalid." }, { status: 400 });
+      }
+      const { data: assignedInstitutions, error: assignedError } = await client.from("colleges")
+        .select("id").eq("nodal_officer_id", auth.user.id);
+      if (assignedError) throw assignedError;
+      const institutionIds = (assignedInstitutions ?? []).map((item) => item.id);
+      if (!institutionIds.length) return NextResponse.json({ error: "No institution is assigned to this account." }, { status: 403 });
+      const { data: record, error: updateError } = await client.from("nodal_portal_records")
+        .update({ status, updated_at: new Date().toISOString() })
+        .eq("id", recordId).in("institution_id", institutionIds).select("id,status").maybeSingle();
+      if (updateError || !record) return NextResponse.json({ error: "Record not found in your assigned institution." }, { status: 404 });
+      return NextResponse.json({ success: true, record }, { headers: { "Cache-Control": "no-store" } });
+    }
     const applicationId = typeof body.applicationId === "string" ? body.applicationId : "";
     const status = typeof body.status === "string" ? body.status : "";
     if (!applicationId || !["under_review", "accepted", "rejected"].includes(status)) {
