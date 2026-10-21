@@ -144,8 +144,8 @@ export async function POST(request: Request) {
       const dueDate = typeof body.dueDate === "string" && body.dueDate ? body.dueDate : null;
       const resourceUrl = typeof body.resourceUrl === "string" ? body.resourceUrl.trim() : "";
       const allowedTypes = ["assignment", "evaluation", "document", "notification", "training", "activity", "test", "certificate"];
-      if (!allowedTypes.includes(type) || title.length < 3 || title.length > 180 || description.length > 5000) {
-        return NextResponse.json({ error: "Choose a supported module and enter a valid title and description." }, { status: 400 });
+      if (!allowedTypes.includes(type) || title.length < 3 || title.length > 180 || description.length > 5000 || !institutionId) {
+        return NextResponse.json({ error: "Choose a supported module, college, and valid title/description." }, { status: 400 });
       }
       if (resourceUrl && !/^https?:\\/\\//i.test(resourceUrl)) return NextResponse.json({ error: "Resource link must start with http:// or https://." }, { status: 400 });
       if (institutionId) {
@@ -206,7 +206,7 @@ export async function PATCH(request: Request) {
       const dueDate = typeof body.dueDate === "string" && body.dueDate ? body.dueDate : null;
       const resourceUrl = typeof body.resourceUrl === "string" ? body.resourceUrl.trim() : "";
       const status = typeof body.status === "string" ? body.status : "published";
-      if (!recordId || title.length < 3 || title.length > 180 || description.length > 5000 || !["published", "draft", "archived"].includes(status)) return NextResponse.json({ error: "Check the record title and status." }, { status: 400 });
+      if (!recordId || title.length < 3 || title.length > 180 || description.length > 5000 || !["open", "in_progress", "submitted", "completed", "published"].includes(status)) return NextResponse.json({ error: "Check the record title and status." }, { status: 400 });
       if (resourceUrl && !/^https?:\\/\\//i.test(resourceUrl)) return NextResponse.json({ error: "Resource link must start with http:// or https://." }, { status: 400 });
       const { data, error } = await client.from("nodal_portal_records").update({ title, description: description || null, due_date: dueDate, resource_url: resourceUrl || null, status }).eq("id", recordId).select("id").maybeSingle();
       if (error || !data) return NextResponse.json({ error: "Module item could not be updated." }, { status: 400 });
