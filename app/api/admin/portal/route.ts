@@ -90,7 +90,7 @@ export async function POST(request: Request) {
       const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
       const password = typeof body.password === "string" ? body.password : "";
       if (fullName.length < 2 || fullName.length > 100) return NextResponse.json({ error: "Officer name must be between 2 and 100 characters." }, { status: 400 });
-      if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254) return NextResponse.json({ error: "Enter a valid staff email address." }, { status: 400 });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return NextResponse.json({ error: "Enter a valid staff email address." }, { status: 400 });
       if (password.length < 8 || password.length > 72) return NextResponse.json({ error: "Temporary password must be between 8 and 72 characters." }, { status: 400 });
       const { data: created, error: createError } = await client.auth.admin.createUser({
         email, password, email_confirm: true, user_metadata: { full_name: fullName, provisioned_by: "admin" },
