@@ -85,11 +85,25 @@ export async function POST(request: Request) {
         !["assignment","activity","test","evaluation"].includes(record.record_type)) {
       return NextResponse.json({ error: "This record is not available for submission from your account." }, { status: 403 });
     }
-    const { data: submission, error: saveError } = await client.from("nodal_record_submissions").upsert({
+    if (record.record_type === "assignment") {
+      if (!submissionUrl) return NextResponse.json({ error: "Assignment submission URL is required." }, { status: 400 });
+      const { data: activeApplications, error: activeError } = await client.from("internship_applications")
+        .select("id").eq("student_id", authData.user.id).not("activated_at", "is", null).limit(1);
+      if (activeError) throw activeError;
+      if (!activeApplications?.length) return NextResponse.json({ error: "An active internship is required before submitting assignments or project reports." }, { status: 409 });
+      const { data: existingSubmission, error: existingError } = await client.from("nodal_record_submissions")
+        .select("id").eq("record_id", recordId).eq("student_id", authData.user.id).maybeSingle();
+      if (existingError) throw existingError;
+      if (existingSubmission) return NextResponse.json({ error: "This assignment has already been submitted. Editing and resubmission are not available." }, { status: 409 });
+    }
+    const submissionPayload = {
       record_id: recordId, student_id: authData.user.id, submission_url: submissionUrl || null,
       submission_note: submissionNote || null, status: "submitted", feedback: null,
       submitted_at: new Date().toISOString(), updated_at: new Date().toISOString(),
-    }, { onConflict: "record_id,student_id" }).select("id,status,submitted_at").single();
+    };
+    const { data: submission, error: saveError } = record.record_type === "assignment"
+      ? await client.from("nodal_record_submissions").insert(submissionPayload).select("id,status,submitted_at").single()
+      : await client.from("nodal_record_submissions").upsert(submissionPayload, { onConflict: "record_id,student_id" }).select("id,status,submitted_at").single();
     if (saveError) {
       console.error("Student submission save failed:", saveError.message);
       return NextResponse.json({ error: "Submission could not be saved." }, { status: 400 });
