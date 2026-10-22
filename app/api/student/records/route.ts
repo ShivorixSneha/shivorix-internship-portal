@@ -36,7 +36,7 @@ export async function GET(request: Request) {
         .eq("student_id", authData.user.id)
         .order("attendance_date", { ascending: false }).limit(300),
       client.from("internship_applications")
-        .select("id,status,applied_at,updated_at,approved_at,activated_at,internships(title,description,mode,location,duration_weeks,fee_amount),internship_payments(status,amount,verified_at)")
+        .select("id,application_number,status,nodal_review_status,review_remarks,mode,requested_hours,requested_credits,preferred_start_date,preferred_end_date,city,state,pin_code,full_address,applied_at,updated_at,approved_at,activated_at,internships(title,description,mode,location,duration_weeks,fee_amount),sectors(name),portal_documents(id,document_type,status,metadata),internship_payments(status,amount,verified_at)")
         .eq("student_id", authData.user.id)
         .order("applied_at", { ascending: false }).limit(100),
       client.from("nodal_record_submissions")
