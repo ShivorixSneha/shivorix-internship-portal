@@ -51,7 +51,7 @@ export async function GET(request: Request) {
 
     const { data: attendance, error: attendanceError } = institutionIds.length
       ? await client.from("internship_attendance")
-          .select("id,student_id,institution_id,attendance_date,status,notes,hours,updated_at,profiles(full_name,email)")
+          .select("id,student_id,institution_id,attendance_date,status,notes,hours,check_in_at,check_out_at,updated_at,profiles(full_name,email)")
           .in("institution_id", institutionIds).order("attendance_date", { ascending: false }).limit(500)
       : { data: [], error: null };
     if (attendanceError) throw attendanceError;
