@@ -21,7 +21,7 @@ export async function POST(request: Request) {
     // Keep the response generic when no matching account is found.
     if (profile?.email) {
       const auth = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
-      const origin = request.headers.get("origin") || process.env.NEXT_PUBLIC_SITE_URL || "https://shivorix-internship-portal-omega.vercel.app";
+      const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://shivorix-internship-portal-omega.vercel.app";
       const { error: resetError } = await auth.auth.resetPasswordForEmail(profile.email, { redirectTo: `${origin}/reset-password` });
       if (resetError) {
         console.error("Student password reset request failed:", resetError.message);
