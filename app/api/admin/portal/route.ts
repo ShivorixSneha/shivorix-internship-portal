@@ -230,6 +230,17 @@ export async function PATCH(request: Request) {
       if (auditInsertError) console.error("Portal record update audit failed:", auditInsertError.message);
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
+    if (body.action === "toggle_college_status") {
+      const collegeId = typeof body.collegeId === "string" ? body.collegeId : "";
+      const status = typeof body.status === "string" ? body.status : "";
+      if (!collegeId || !["active", "inactive"].includes(status)) return NextResponse.json({ error: "Choose a valid college and status." }, { status: 400 });
+      const { data, error } = await client.from("colleges").update({ status, updated_at: new Date().toISOString() }).eq("id", collegeId).select("id,status").maybeSingle();
+      if (error || !data) return NextResponse.json({ error: "College status could not be updated." }, { status: 400 });
+      const { error: auditError } = await client.from("admin_audit_log").insert({ actor_id: user.id, action: "college_status_changed", old_value: null, new_value: { status }, details: { college_id: collegeId } });
+      if (auditError) console.error("College status audit failed:", auditError.message);
+      return NextResponse.json({ success: true, college: data }, { headers: { "Cache-Control": "no-store" } });
+    }
+
     if (body.action === "update_college") {
       const collegeId = typeof body.collegeId === "string" ? body.collegeId : "";
       const name = typeof body.name === "string" ? body.name.trim() : "";
