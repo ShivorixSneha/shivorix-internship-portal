@@ -191,7 +191,7 @@ export async function POST(request: Request) {
     if (university.length < 2 || !city || !state || !addressLine || !/^[0-9]{6}$/.test(pinCode)) return NextResponse.json({ error: "University, city/district, state, address, and a 6-digit PIN code are required." }, { status: 400 });
     if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(officialEmail) || officialEmail.length > 254) return NextResponse.json({ error: "Enter a valid official college email." }, { status: 400 });
     if (!/^[0-9+() -]{10,18}$/.test(officialPhone)) return NextResponse.json({ error: "Enter a valid official contact number." }, { status: 400 });
-    if (website && !/^https?:\\/\\//i.test(website)) return NextResponse.json({ error: "Website must start with http:// or https://." }, { status: 400 });
+    if (website && !(website.startsWith("https://") || website.startsWith("http://"))) return NextResponse.json({ error: "Website must start with http:// or https://." }, { status: 400 });
     const { data, error } = await client.from("colleges").insert({
       name, college_code: collegeCode, college_type: collegeType, university_name: university, affiliation_code: affiliationCode || null,
       website: website || null, official_email: officialEmail, official_phone: officialPhone, address_line: addressLine,
@@ -257,7 +257,7 @@ export async function PATCH(request: Request) {
       const pinCode = typeof body.pinCode === "string" ? body.pinCode.trim() : "";
       if (!collegeId || name.length < 2 || name.length > 200 || !collegeCode || !["Government", "Private", "Autonomous", "Other"].includes(collegeType)) return NextResponse.json({ error: "Check the college name, code, and type." }, { status: 400 });
       if (!university || !city || !state || !addressLine || !/^[0-9]{6}$/.test(pinCode) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(officialEmail) || !/^[0-9+() -]{10,18}$/.test(officialPhone)) return NextResponse.json({ error: "Check the university, contact, and address details." }, { status: 400 });
-      if (website && !/^https?:\\/\\//i.test(website)) return NextResponse.json({ error: "Website must start with http:// or https://." }, { status: 400 });
+      if (website && !(website.startsWith("https://") || website.startsWith("http://"))) return NextResponse.json({ error: "Website must start with http:// or https://." }, { status: 400 });
       const { data, error } = await client.from("colleges").update({ name, college_code: collegeCode, college_type: collegeType, university_name: university, affiliation_code: affiliationCode || null, website: website || null, official_email: officialEmail, official_phone: officialPhone, address_line: addressLine, city, district: city, state, pin_code: pinCode, updated_at: new Date().toISOString() }).eq("id", collegeId).select("id").maybeSingle();
       if (error || !data) return NextResponse.json({ error: "Institution details could not be updated." }, { status: 400 });
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
