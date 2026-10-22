@@ -32,7 +32,7 @@ export async function GET(request: Request) {
         .select("id,role,full_name,email,college_id,institution_name,course,created_at")
         .order("created_at", { ascending: false }).limit(500),
       client.from("colleges")
-        .select("id,name,university_name,city,state,nodal_officer_id,created_at")
+        .select("id,name,college_code,college_type,university_name,affiliation_code,website,official_email,official_phone,address_line,city,district,state,pin_code,status,created_by,nodal_officer_id,created_at,updated_at")
         .order("name"),
       client.from("internships")
         .select("id,title,description,mode,location,duration_weeks,fee_amount,is_active,published_at,created_at")
@@ -175,11 +175,27 @@ export async function POST(request: Request) {
     const university = typeof body.university === "string" ? body.university.trim() : "";
     const city = typeof body.city === "string" ? body.city.trim() : "";
     const state = typeof body.state === "string" ? body.state.trim() : "";
+    const collegeCode = typeof body.collegeCode === "string" ? body.collegeCode.trim().toUpperCase() : "";
+    const collegeType = typeof body.collegeType === "string" ? body.collegeType : "";
+    const affiliationCode = typeof body.affiliationCode === "string" ? body.affiliationCode.trim() : "";
+    const website = typeof body.website === "string" ? body.website.trim() : "";
+    const officialEmail = typeof body.officialEmail === "string" ? body.officialEmail.trim().toLowerCase() : "";
+    const officialPhone = typeof body.officialPhone === "string" ? body.officialPhone.trim() : "";
+    const addressLine = typeof body.addressLine === "string" ? body.addressLine.trim() : "";
+    const pinCode = typeof body.pinCode === "string" ? body.pinCode.trim() : "";
     if (name.length < 2 || name.length > 200) {
       return NextResponse.json({ error: "Institution name must be between 2 and 200 characters." }, { status: 400 });
     }
+    if (!collegeCode || collegeCode.length > 40) return NextResponse.json({ error: "Enter a unique College Code (up to 40 characters)." }, { status: 400 });
+    if (!["Government", "Private", "Autonomous", "Other"].includes(collegeType)) return NextResponse.json({ error: "Choose a valid college type." }, { status: 400 });
+    if (university.length < 2 || !city || !state || !addressLine || !/^[0-9]{6}$/.test(pinCode)) return NextResponse.json({ error: "University, city/district, state, address, and a 6-digit PIN code are required." }, { status: 400 });
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(officialEmail) || officialEmail.length > 254) return NextResponse.json({ error: "Enter a valid official college email." }, { status: 400 });
+    if (!/^[0-9+() -]{10,18}$/.test(officialPhone)) return NextResponse.json({ error: "Enter a valid official contact number." }, { status: 400 });
+    if (website && !/^https?:\\/\\//i.test(website)) return NextResponse.json({ error: "Website must start with http:// or https://." }, { status: 400 });
     const { data, error } = await client.from("colleges").insert({
-      name, university_name: university || null, city: city || null, state: state || null,
+      name, college_code: collegeCode, college_type: collegeType, university_name: university, affiliation_code: affiliationCode || null,
+      website: website || null, official_email: officialEmail, official_phone: officialPhone, address_line: addressLine,
+      city, district: city, state, pin_code: pinCode, status: "active", created_by: user.id,
     }).select("id").single();
     if (error) {
       console.error("Admin create institution failed:", error.message);
@@ -220,8 +236,18 @@ export async function PATCH(request: Request) {
       const university = typeof body.university === "string" ? body.university.trim() : "";
       const city = typeof body.city === "string" ? body.city.trim() : "";
       const state = typeof body.state === "string" ? body.state.trim() : "";
-      if (!collegeId || name.length < 2 || name.length > 200) return NextResponse.json({ error: "A valid institution name is required." }, { status: 400 });
-      const { data, error } = await client.from("colleges").update({ name, university_name: university || null, city: city || null, state: state || null, updated_at: new Date().toISOString() }).eq("id", collegeId).select("id").maybeSingle();
+      const collegeCode = typeof body.collegeCode === "string" ? body.collegeCode.trim().toUpperCase() : "";
+      const collegeType = typeof body.collegeType === "string" ? body.collegeType : "";
+      const affiliationCode = typeof body.affiliationCode === "string" ? body.affiliationCode.trim() : "";
+      const website = typeof body.website === "string" ? body.website.trim() : "";
+      const officialEmail = typeof body.officialEmail === "string" ? body.officialEmail.trim().toLowerCase() : "";
+      const officialPhone = typeof body.officialPhone === "string" ? body.officialPhone.trim() : "";
+      const addressLine = typeof body.addressLine === "string" ? body.addressLine.trim() : "";
+      const pinCode = typeof body.pinCode === "string" ? body.pinCode.trim() : "";
+      if (!collegeId || name.length < 2 || name.length > 200 || !collegeCode || !["Government", "Private", "Autonomous", "Other"].includes(collegeType)) return NextResponse.json({ error: "Check the college name, code, and type." }, { status: 400 });
+      if (!university || !city || !state || !addressLine || !/^[0-9]{6}$/.test(pinCode) || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(officialEmail) || !/^[0-9+() -]{10,18}$/.test(officialPhone)) return NextResponse.json({ error: "Check the university, contact, and address details." }, { status: 400 });
+      if (website && !/^https?:\\/\\//i.test(website)) return NextResponse.json({ error: "Website must start with http:// or https://." }, { status: 400 });
+      const { data, error } = await client.from("colleges").update({ name, college_code: collegeCode, college_type: collegeType, university_name: university, affiliation_code: affiliationCode || null, website: website || null, official_email: officialEmail, official_phone: officialPhone, address_line: addressLine, city, district: city, state, pin_code: pinCode, updated_at: new Date().toISOString() }).eq("id", collegeId).select("id").maybeSingle();
       if (error || !data) return NextResponse.json({ error: "Institution details could not be updated." }, { status: 400 });
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
