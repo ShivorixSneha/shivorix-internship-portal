@@ -32,7 +32,8 @@ function sectorName(value: SectorRelation) {
 
 export default function InternshipsPage() {
   const router = useRouter();
-  const [internships, setInternships] = useState<Internship[]>([]);\n  const [activeSectors, setActiveSectors] = useState<GuidelineSector[]>([]);
+  const [internships, setInternships] = useState<Internship[]>([]);
+  const [activeSectors, setActiveSectors] = useState<GuidelineSector[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [applyingId, setApplyingId] = useState("");
@@ -47,7 +48,8 @@ export default function InternshipsPage() {
       const response = await fetch("/api/internships", { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not load internships.");
-      setInternships(result.internships ?? []);\n      setActiveSectors(result.sectors ?? []);
+      setInternships(result.internships ?? []);
+      setActiveSectors(result.sectors ?? []);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Could not load internships.");
     } finally {
