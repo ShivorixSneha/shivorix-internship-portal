@@ -16,9 +16,16 @@ export async function POST(request: Request) {
     if (authError || !authData.user) return NextResponse.json({ error: "Your session has expired. Sign in again." }, { status: 401 });
 
     const { data: profile, error: profileError } = await admin
-      .from("profiles").select("role").eq("id", authData.user.id).maybeSingle();
+      .from("profiles").select("role,college_id").eq("id", authData.user.id).maybeSingle();
     if (profileError || profile?.role !== "student") {
       return NextResponse.json({ error: "Only student accounts can apply for internships." }, { status: 403 });
+    }
+
+    if (!profile.college_id) return NextResponse.json({ error: "Your student profile must be linked to your college before applying." }, { status: 400 });
+    const { data: college, error: collegeError } = await admin.from("colleges")
+      .select("id,nodal_officer_id").eq("id", profile.college_id).maybeSingle();
+    if (collegeError || !college || !college.nodal_officer_id) {
+      return NextResponse.json({ error: "Your college does not have an assigned Nodal Officer yet. Contact your college or portal admin before applying." }, { status: 400 });
     }
 
     const body = await request.json();
