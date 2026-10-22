@@ -235,6 +235,26 @@ export async function PATCH(request: Request) {
       if (updateError || !record) return NextResponse.json({ error: "Record not found in your assigned institution." }, { status: 404 });
       return NextResponse.json({ success: true, record }, { headers: { "Cache-Control": "no-store" } });
     }
+    if (body.action === "application_remarks") {
+      const applicationId = typeof body.applicationId === "string" ? body.applicationId : "";
+      const reviewRemarks = typeof body.reviewRemarks === "string" ? body.reviewRemarks.trim().slice(0, 2000) : "";
+      if (!applicationId) return NextResponse.json({ error: "Application ID is required." }, { status: 400 });
+      const { data: institutions, error: institutionError } = await client.from("colleges")
+        .select("id").eq("nodal_officer_id", auth.user.id);
+      if (institutionError) throw institutionError;
+      const institutionIds = (institutions ?? []).map((college) => college.id);
+      if (!institutionIds.length) return NextResponse.json({ error: "No institution is assigned to this account." }, { status: 403 });
+      const { data: scopedStudents, error: studentsError } = await client.from("profiles")
+        .select("id").eq("role", "student").in("college_id", institutionIds);
+      if (studentsError) throw studentsError;
+      const studentIds = (scopedStudents ?? []).map((student) => student.id);
+      const { data: application, error: updateError } = await client.from("internship_applications")
+        .update({ review_remarks: reviewRemarks || null, updated_at: new Date().toISOString() })
+        .eq("id", applicationId).in("student_id", studentIds)
+        .select("id,application_number,review_remarks").maybeSingle();
+      if (updateError || !application) return NextResponse.json({ error: "Application not found in your assigned institution." }, { status: 404 });
+      return NextResponse.json({ success: true, application }, { headers: { "Cache-Control": "no-store" } });
+    }
     const applicationId = typeof body.applicationId === "string" ? body.applicationId : "";
     const status = typeof body.status === "string" ? body.status : "";
     if (!applicationId || !["under_review", "accepted", "rejected"].includes(status)) {
