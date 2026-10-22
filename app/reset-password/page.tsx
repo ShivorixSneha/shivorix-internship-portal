@@ -1,5 +1,7 @@
 "use client";
 
+import "../auth-extras.css";
+
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
