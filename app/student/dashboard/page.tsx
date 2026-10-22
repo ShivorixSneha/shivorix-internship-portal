@@ -17,20 +17,11 @@ type StudentAttendance = { id: string; attendance_date: string; status: string; 
 type StudentSubmission = { id: string; record_id: string; status: string; submission_url: string | null; submission_note: string | null; feedback: string | null; submitted_at: string };
 type StudentApplication = { id: string; application_number?: string | null; status: string; nodal_review_status?: string | null; review_remarks?: string | null; mode?: string | null; requested_hours?: number | null; requested_credits?: number | null; preferred_start_date?: string | null; preferred_end_date?: string | null; city?: string | null; state?: string | null; pin_code?: string | null; full_address?: string | null; applied_at: string; updated_at: string | null; sectors?: { name: string } | null; portal_documents?: { id: string; document_type: string; status: string; metadata?: Record<string, unknown> }[] | null; internships: { title: string; description: string | null; mode: string; location: string | null; duration_weeks: number | null; fee_amount: number | null } | { title: string; description: string | null; mode: string; location: string | null; duration_weeks: number | null; fee_amount: number | null }[] | null; internship_payments?: { status: string; amount: number; verified_at: string | null }[] | null; approved_at?: string | null; activated_at?: string | null };
 type Profile = {
-  full_name: string | null;
-  father_name: string | null;
-  mother_name: string | null;
-  date_of_birth: string | null;
-  gender: string | null;
-  address: string | null;
-  email: string | null;
-  phone: string | null;
-  roll_number: string | null;
-  registration_number: string | null;
-  institution_name: string | null;
-  course: string | null;
-  academic_year: string | null;
-  current_semester: string | null;
+  full_name: string | null; father_name: string | null; mother_name: string | null; date_of_birth: string | null;
+  gender: string | null; address: string | null; city: string | null; state: string | null; pin_code: string | null;
+  email: string | null; phone: string | null; roll_number: string | null; registration_number: string | null;
+  institution_name: string | null; college_name: string | null; university_name: string | null; college_id: string | null;
+  course: string | null; branch: string | null; academic_year: string | null; current_semester: string | null;
 };
 
 const navigation = [
@@ -54,15 +45,16 @@ const navigation = [
 ];
 
 const profileFields: { label: string; key: keyof Profile }[] = [
-  { label: "Full name", key: "full_name" },
-  { label: "Roll number", key: "roll_number" },
-  { label: "Registration number", key: "registration_number" },
-  { label: "Email address", key: "email" },
-  { label: "Mobile number", key: "phone" },
-  { label: "College / institution", key: "institution_name" },
-  { label: "Course / programme", key: "course" },
-  { label: "Academic year", key: "academic_year" },
-  { label: "Current semester", key: "current_semester" },
+  { label: "Full name", key: "full_name" }, { label: "Father's name", key: "father_name" },
+  { label: "Mother's name", key: "mother_name" }, { label: "Gender", key: "gender" },
+  { label: "Mobile number", key: "phone" }, { label: "Email address", key: "email" },
+  { label: "Permanent address", key: "address" }, { label: "City / District", key: "city" },
+  { label: "State", key: "state" }, { label: "PIN code", key: "pin_code" },
+  { label: "College / Institute", key: "college_name" }, { label: "University", key: "university_name" },
+  { label: "Course / Programme", key: "course" }, { label: "Department", key: "branch" },
+  { label: "Current semester", key: "current_semester" }, { label: "Academic session", key: "academic_year" },
+  { label: "College Roll Number", key: "roll_number" }, { label: "University Registration Number", key: "registration_number" },
+  { label: "College ID", key: "college_id" },
 ];
 
 export default function StudentDashboard() {
@@ -81,7 +73,7 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("Overview");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);\n  const [dobDraft, setDobDraft] = useState("");\n  const [profileBusy, setProfileBusy] = useState(false);\n  const [profileNotice, setProfileNotice] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -95,7 +87,7 @@ export default function StudentDashboard() {
         }
         const { data, error: profileError } = await supabase
           .from("profiles")
-          .select("full_name,father_name,mother_name,date_of_birth,gender,address,email,phone,roll_number,registration_number,institution_name,course,academic_year,current_semester")
+          .select("full_name,father_name,mother_name,date_of_birth,gender,address,city,state,pin_code,email,phone,roll_number,registration_number,institution_name,college_id,course,branch,academic_year,current_semester,colleges(name,university_name)")
           .eq("id", user.id)
           .single();
         if (profileError) throw profileError;
@@ -109,7 +101,10 @@ export default function StudentDashboard() {
           if (!response.ok) throw new Error(recordData.error || "Could not load assignments and institution updates.");
         }
         if (active) {
-          setProfile(data as Profile);
+          const rawProfile = data as any;
+          const college = Array.isArray(rawProfile.colleges) ? rawProfile.colleges[0] : rawProfile.colleges;
+          setProfile({ ...rawProfile, college_name: college?.name || rawProfile.institution_name || null, university_name: college?.university_name || null } as Profile);
+          setDobDraft(rawProfile.date_of_birth || "");
           setSectorNames((selections || []).map((item: any) => item.sectors?.name).filter(Boolean));
           setStudentRecords((recordData.records ?? []) as StudentRecord[]);
           setStudentAttendance((recordData.attendance ?? []) as StudentAttendance[]);
@@ -131,6 +126,25 @@ export default function StudentDashboard() {
     const filled = profileFields.filter(({ key }) => Boolean(profile[key]?.toString().trim())).length;
     return Math.round((filled / profileFields.length) * 100);
   }, [profile]);
+
+  async function saveDateOfBirth(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault(); setProfileBusy(true); setProfileNotice(""); setError("");
+    try {
+      const { data: { session } } = await getSupabaseBrowserClient().auth.getSession();
+      if (!session) throw new Error("Your session expired. Please sign in again.");
+      const response = await fetch("/api/student/profile", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ dateOfBirth: dobDraft }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Date of birth could not be saved.");
+      setProfile(current => current ? { ...current, date_of_birth: result.dateOfBirth } : current);
+      setProfileNotice("Date of birth saved.");
+    } catch (e) {
+      setProfileNotice(e instanceof Error ? e.message : "Date of birth could not be saved.");
+    } finally { setProfileBusy(false); }
+  }
 
   async function openApplicationDocument(documentId: string) {
     const tab = window.open("about:blank", "_blank");
@@ -343,7 +357,7 @@ export default function StudentDashboard() {
               <div className="portal-info-note"><ShieldCheck size={18}/><div><strong>College approval and official notices take priority</strong><p>This page is specifically for Semester V students and summarizes the uploaded university guideline. Confirm your approved IPO, submission format and evaluation schedule with your College Internship Nodal Officer. Where a requirement depends on programme-specific rules or later official notices, follow the applicable official instruction.</p></div></div>
             </>
           ) : activeSection === "My Profile" ? (
-            <><div className="portal-page-title"><span className="portal-page-icon"><UserRound size={22} /></span><div><div className="portal-eyebrow">YOUR INFORMATION</div><h1>My Profile</h1><p>Review your personal and academic details saved with SHIVORIX.</p></div></div><section className="portal-panel portal-details-panel"><div className="portal-panel-heading"><div><h3>Student details</h3><p>Information from your registration</p></div><span className="portal-profile-badge"><ShieldCheck size={14} /> Private profile</span></div><div className="portal-details-grid">{profileFields.map(({ label, key }) => <div className="portal-detail-field" key={key}><small>{label}</small><strong>{profile?.[key] || "Not provided"}</strong></div>)}</div><div className="portal-details-footer"><ShieldCheck size={16} /><span>Your details are shown only inside your signed-in student session.</span></div></section><section className="portal-panel portal-sectors-panel"><div className="portal-panel-heading"><div><h3>Selected internship sectors</h3><p>Your current areas of interest</p></div></div>{sectorNames.length ? <div className="portal-sector-list">{sectorNames.map((name) => <span key={name}><CheckCircle2 size={14} />{name}</span>)}</div> : <p className="portal-muted">No internship sectors are linked to your profile yet.</p>}</section></>
+            <><div className="portal-page-title"><span className="portal-page-icon"><UserRound size={22} /></span><div><div className="portal-eyebrow">YOUR INFORMATION</div><h1>My Profile</h1><p>Review your personal and academic details saved with SHIVORIX.</p></div></div><section className="portal-panel portal-details-panel"><div className="portal-panel-heading"><div><h3>Student details</h3><p>Information from your registration</p></div><span className="portal-profile-badge"><ShieldCheck size={14} /> Private profile</span></div>{profileNotice && <div className="portal-info-note" role="status"><CheckCircle2 size={18}/><div><strong>Profile update</strong><p>{profileNotice}</p></div></div>}<form className="portal-submission-form" onSubmit={saveDateOfBirth}><label>Date of Birth (editable)<input name="dateOfBirth" type="date" required value={dobDraft} onChange={event=>setDobDraft(event.target.value)} /></label><button type="submit" disabled={profileBusy}>{profileBusy ? "Saving…" : "Save date of birth"}</button></form><div className="portal-details-grid">{profileFields.map(({ label, key }) => <div className="portal-detail-field" key={key}><small>{label}</small><strong>{profile?.[key] || "Not provided"}</strong></div>)}</div><div className="portal-details-footer"><ShieldCheck size={16} /><span>Your details are shown only inside your signed-in student session.</span></div></section><section className="portal-panel portal-sectors-panel"><div className="portal-panel-heading"><div><h3>Selected internship sectors</h3><p>Your current areas of interest</p></div></div>{sectorNames.length ? <div className="portal-sector-list">{sectorNames.map((name) => <span key={name}><CheckCircle2 size={14} />{name}</span>)}</div> : <p className="portal-muted">No internship sectors are linked to your profile yet.</p>}</section></>
           ) : ["Assignments","Assessments","Evaluation","Documents","Notifications","Attendance","My Application","Internship Details","Online Training","Activities","My Tests","Project & Report","Final Test","Certificate"].includes(activeSection) ? (
             <><div className="portal-page-title"><span className="portal-page-icon"><SelectedIcon size={22} /></span><div><div className="portal-eyebrow">YOUR LIVE RECORDS</div><h1>{activeSection}</h1><p>{selectedItem?.description || "Your student workspace."}</p></div></div>
               {submissionNotice && <div className="portal-info-note"><CheckCircle2 size={18}/><div><strong>Submission saved</strong><p>{submissionNotice}</p></div></div>}{error && <div className="portal-info-note"><CircleHelp size={18}/><div><strong>Action needs attention</strong><p>{error}</p></div></div>}{recordsNotice && <div className="portal-info-note"><Bell size={18}/><div><strong>Institution setup</strong><p>{recordsNotice}</p></div></div>}
