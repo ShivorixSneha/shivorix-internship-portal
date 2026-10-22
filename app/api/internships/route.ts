@@ -26,7 +26,7 @@ export async function GET() {
     const admin = adminClient();
     const { data, error } = await admin
       .from("internships")
-      .select("id,title,description,mode,location,duration_weeks,fee_amount,published_at,sectors(name)")
+      .select("id,title,description,sector_id,mode,location,duration_weeks,fee_amount,published_at,sectors(id,name)")
       .eq("is_active", true)
       .not("published_at", "is", null)
       .order("published_at", { ascending: false });
