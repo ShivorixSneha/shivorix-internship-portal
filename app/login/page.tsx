@@ -78,7 +78,7 @@ export default function Login() {
       const { data, error: verifyError } = await getSupabaseBrowserClient().auth.verifyOtp({
         email: otpEmail, token: otp.trim(), type: "email",
       });
-      if (verifyError || !data.session) throw verifyError || new Error("OTP verification did not create a session.");
+      if (verifyError || !data.session || !data.user) throw verifyError || new Error("OTP verification did not create a session.");
       const { data: profile, error: profileError } = await getSupabaseBrowserClient().from("profiles")
         .select("role").eq("id", data.user.id).maybeSingle();
       if (profileError || profile?.role !== "student") {
