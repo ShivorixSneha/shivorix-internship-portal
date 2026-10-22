@@ -76,7 +76,7 @@ export async function POST(request: Request) {
     const address = text(form, "address");
     const coverNote = text(form, "coverNote");
     const declarations = ["declaration1", "declaration2", "declaration3"].map(key => form.get(key) === "on" || form.get(key) === "true");
-    const required = [internshipId, sectorId, fullName, fatherName, motherName, dateOfBirth, gender, mobile, email, course, department, semester, academicSession, registrationNumber, rollNumber, modeInput, startDate, endDate, state, city, pinCode, address];
+    const required = [sectorId, fullName, fatherName, motherName, dateOfBirth, gender, mobile, email, course, department, semester, academicSession, registrationNumber, rollNumber, modeInput, startDate, endDate, state, city, pinCode, address];
     if (required.some(value => !value)) return NextResponse.json({ error: "Complete every required personal, academic, internship and address field." }, { status: 400 });
     if (!/^\d{10}$/.test(mobile)) return NextResponse.json({ error: "Mobile number must contain exactly 10 digits." }, { status: 400 });
     if (!/^\d{6}$/.test(pinCode)) return NextResponse.json({ error: "PIN code must contain exactly 6 digits." }, { status: 400 });
@@ -107,18 +107,21 @@ export async function POST(request: Request) {
     const { data: sector, error: sectorError } = await client.from("sectors")
       .select("id,is_active").eq("id", sectorId).eq("is_active", true).maybeSingle();
     if (sectorError || !sector) return NextResponse.json({ error: "Choose an active internship sector." }, { status: 400 });
-    const { data: internship, error: internshipError } = await client.from("internships")
-      .select("id,sector_id,mode").eq("id", internshipId).eq("is_active", true).not("published_at", "is", null).maybeSingle();
-    if (internshipError || !internship) return NextResponse.json({ error: "This internship is no longer available." }, { status: 404 });
-    if (internship.sector_id && internship.sector_id !== sectorId) return NextResponse.json({ error: "The selected internship does not match the selected sector." }, { status: 400 });
-
-    const { data: existing, error: existingError } = await client.from("internship_applications")
-      .select("id").eq("student_id", authData.user.id).eq("internship_id", internshipId).maybeSingle();
-    if (existingError) throw existingError;
-    if (existing) return NextResponse.json({ error: "You have already applied for this internship." }, { status: 409 });
+    let internship: { id: string; sector_id: string | null; mode: string } | null = null;
+    if (internshipId) {
+      const { data, error: internshipError } = await client.from("internships")
+        .select("id,sector_id,mode").eq("id", internshipId).eq("is_active", true).not("published_at", "is", null).maybeSingle();
+      if (internshipError || !data) return NextResponse.json({ error: "This internship is no longer available." }, { status: 404 });
+      internship = data;
+      if (internship.sector_id && internship.sector_id !== sectorId) return NextResponse.json({ error: "The selected internship does not match the selected sector." }, { status: 400 });
+      const { data: existing, error: existingError } = await client.from("internship_applications")
+        .select("id").eq("student_id", authData.user.id).eq("internship_id", internshipId).maybeSingle();
+      if (existingError) throw existingError;
+      if (existing) return NextResponse.json({ error: "You have already applied for this internship." }, { status: 409 });
+    }
 
     const { data: application, error: insertError } = await client.from("internship_applications").insert({
-      student_id: authData.user.id, internship_id: internshipId, college_id: college.id, sector_id: sectorId,
+      student_id: authData.user.id, internship_id: internshipId || null, college_id: college.id, sector_id: sectorId,
       mode: modeInput, requested_hours: 120, requested_credits: 4,
       preferred_start_date: startDate, preferred_end_date: endDate, state, city, pin_code: pinCode,
       full_address: address, status: "submitted", nodal_review_status: "pending",
