@@ -38,7 +38,7 @@ export async function GET(request: Request) {
         .select("id,title,description,mode,location,duration_weeks,fee_amount,is_active,published_at,created_at")
         .order("created_at", { ascending: false }).limit(100),
       client.from("internship_applications")
-        .select("id,status,applied_at,updated_at,profiles(full_name,email),internships(title)")
+        .select("id,application_number,student_id,internship_id,college_id,sector_id,mode,requested_hours,requested_credits,preferred_start_date,preferred_end_date,state,city,pin_code,full_address,nodal_review_status,review_remarks,status,applied_at,updated_at,profiles(full_name,email),internships(title),sectors(name),portal_documents(id,document_type,status,metadata)")
         .order("applied_at", { ascending: false }).limit(100),
       client.from("profiles").select("id", { count: "exact", head: true }),
       client.from("profiles").select("id", { count: "exact", head: true }).eq("role", "student"),
@@ -340,7 +340,7 @@ export async function PATCH(request: Request) {
         return NextResponse.json({ error: "Application ID or status is invalid." }, { status: 400 });
       }
       const { data, error } = await client.from("internship_applications")
-        .update({ status, updated_at: new Date().toISOString() }).eq("id", id).select("id,status").maybeSingle();
+        .update({ status, nodal_review_status: status === "accepted" ? "approved" : status === "rejected" ? "rejected" : status === "under_review" ? "under_review" : "pending", updated_at: new Date().toISOString() }).eq("id", id).select("id,status,application_number,nodal_review_status").maybeSingle();
       if (error || !data) {
         console.error("Admin application update failed:", error?.message || "record not found");
         return NextResponse.json({ error: "Application status could not be updated." }, { status: 400 });
