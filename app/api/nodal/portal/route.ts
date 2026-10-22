@@ -253,12 +253,20 @@ export async function PATCH(request: Request) {
     const studentIds = (scopedStudents ?? []).map((student) => student.id);
     if (!studentIds.length) return NextResponse.json({ error: "No students are assigned to your institution." }, { status: 403 });
 
-    const { data: application, error: updateError } = await client.from("internship_applications")
-      .update({ status, updated_at: new Date().toISOString() })
-      .eq("id", applicationId).in("student_id", studentIds).select("id,status").maybeSingle();
-    if (updateError || !application) {
-      return NextResponse.json({ error: "Application not found in your assigned institution." }, { status: 404 });
+    const { data: currentApplication, error: currentError } = await client.from("internship_applications")
+      .select("id,status,student_id").eq("id", applicationId).in("student_id", studentIds).maybeSingle();
+    if (currentError || !currentApplication) return NextResponse.json({ error: "Application not found in your assigned institution." }, { status: 404 });
+    if (!["submitted", "under_review"].includes(currentApplication.status)) {
+      return NextResponse.json({ error: "This application has already been decided or activated and cannot be changed." }, { status: 409 });
     }
+    const now = new Date().toISOString();
+    const update: Record<string, unknown> = { status, updated_at: now };
+    if (status === "accepted") { update.approved_by = auth.user.id; update.approved_at = now; }
+    if (status === "rejected") { update.rejected_by = auth.user.id; update.rejected_at = now; }
+    const { data: application, error: updateError } = await client.from("internship_applications")
+      .update(update).eq("id", applicationId).in("student_id", studentIds)
+      .select("id,status,approved_at,rejected_at").maybeSingle();
+    if (updateError || !application) return NextResponse.json({ error: "Application review could not be saved." }, { status: 400 });
     return NextResponse.json({ success: true, application }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Nodal portal PATCH failed:", error);
