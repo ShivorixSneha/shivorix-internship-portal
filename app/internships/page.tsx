@@ -36,7 +36,8 @@ export default function InternshipsPage() {
   const [loadError, setLoadError] = useState("");
   const [applyingId, setApplyingId] = useState("");
   const [selectedForApply, setSelectedForApply] = useState<Internship | null>(null);
-  const [notice, setNotice] = useState("");\n  const [profileDefaults, setProfileDefaults] = useState<Record<string, string>>({});
+  const [notice, setNotice] = useState("");
+  const [profileDefaults, setProfileDefaults] = useState<Record<string, string>>({});
 
   async function loadInternships() {
     setLoading(true);
