@@ -1,6 +1,8 @@
 -- Complete the student application workflow while preserving existing application/payment relationships.
 create sequence if not exists public.internship_application_number_seq;
 
+alter table public.internship_applications alter column internship_id drop not null;
+
 alter table public.internship_applications
   add column if not exists application_number text,
   add column if not exists college_id uuid references public.colleges(id) on delete set null,
