@@ -1,0 +1,7 @@
+.auth-mode-switch{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;margin:12px 0 18px;background:#f3edf9;border:1px solid #e5d9f0;border-radius:12px}
+.auth-mode-switch button{border:0;border-radius:8px;padding:10px 12px;background:transparent;color:#655478;font:inherit;font-weight:700;cursor:pointer}
+.auth-mode-switch button.active{background:#fff;color:#4c168c;box-shadow:0 2px 8px rgba(50,24,80,.09)}
+.auth-text-action{display:block;width:100%;margin-top:10px;padding:8px;border:0;background:transparent;color:#5b2796;font:inherit;font-size:13px;font-weight:700;text-align:center;cursor:pointer}
+.auth-text-action:disabled{opacity:.55;cursor:not-allowed}
+.portal-application-documents{display:flex;flex-wrap:wrap;align-items:center;gap:7px;margin-top:8px}
+.admin-document-link,.nodal-document-link{display:block;border:0;background:transparent;color:#5a2797;font:inherit;font-size:12px;text-align:left;text-decoration:underline;cursor:pointer;padding:3px 0}
