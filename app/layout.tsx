@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import "./globals.css";
+import "./auth-extras.css";
 
 export const metadata: Metadata = { title: "SHIVORIX Internship Portal", description: "Learn • Build • Grow with SHIVORIX" };
 
