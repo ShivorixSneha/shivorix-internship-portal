@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 
 type SectorRelation = { id?: string; name: string } | { id?: string; name: string }[] | null;
+type GuidelineSector = { id: string; name: string; category: string | null; description: string | null };
 type Internship = {
   id: string;
   title: string;
@@ -31,7 +32,7 @@ function sectorName(value: SectorRelation) {
 
 export default function InternshipsPage() {
   const router = useRouter();
-  const [internships, setInternships] = useState<Internship[]>([]);
+  const [internships, setInternships] = useState<Internship[]>([]);\n  const [activeSectors, setActiveSectors] = useState<GuidelineSector[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
   const [applyingId, setApplyingId] = useState("");
@@ -46,7 +47,7 @@ export default function InternshipsPage() {
       const response = await fetch("/api/internships", { cache: "no-store" });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Could not load internships.");
-      setInternships(result.internships ?? []);
+      setInternships(result.internships ?? []);\n      setActiveSectors(result.sectors ?? []);
     } catch (error) {
       setLoadError(error instanceof Error ? error.message : "Could not load internships.");
     } finally {
@@ -149,8 +150,8 @@ export default function InternshipsPage() {
       </section>
 
       <section className="domain-section">
-        <div className="domain-heading"><span>EXPLORE YOUR INTERESTS</span><h2>Which field interests you?</h2><p>These are example career areas—not active internship vacancies.</p></div>
-        <div className="domain-grid">{domains.map((domain) => <article className="domain-card" key={domain.number}><span>{domain.number}</span><h3>{domain.title}</h3><p>{domain.detail}</p></article>)}</div>
+        <div className="domain-heading"><span>ACTIVE GUIDELINE SECTORS</span><h2>Apply by internship sector</h2><p>Choose an active sector to submit your academic internship application. A published vacancy is not required to start a sector-based application.</p></div>
+        {activeSectors.length ? <div className="domain-grid">{activeSectors.map(sector => <article className="domain-card" key={sector.id}><span>{sector.category || "GUIDELINE SECTOR"}</span><h3>{sector.name}</h3><p>{sector.description || "Submit your internship application for this active guideline sector."}</p><button className="opportunities-cta" onClick={() => { const match = internships.find(item => item.sector_id === sector.id); setSelectedForApply(match || { id: "", title: sector.name, description: sector.description, sector_id: sector.id, mode: "onsite", location: null, duration_weeks: null, published_at: null, sectors: { id: sector.id, name: sector.name } }); }}>Apply by sector →</button></article>)}</div> : <div className="opportunities-status"><div><b>No active guideline sectors configured</b><small>The portal administrator must activate the applicable sectors before applications can be submitted.</small></div></div>}
       </section>
 
       {selectedForApply && <div className="application-modal-backdrop" role="presentation"><section className="application-modal" role="dialog" aria-modal="true" aria-labelledby="application-form-title"><button type="button" className="application-modal-close" onClick={() => setSelectedForApply(null)} aria-label="Close application form">×</button><span className="opportunities-eyebrow">SEMESTER V · STUDENT APPLICATION</span><h2 id="application-form-title">Complete your application</h2><p>Complete all required details, upload five documents (maximum 10 MB each), and accept all three declarations.</p><form key={profileDefaults.email || "student-application"} className="application-details-form" onSubmit={apply} encType="multipart/form-data">
@@ -169,7 +170,7 @@ export default function InternshipsPage() {
 <label>Academic session *<input name="academicYear" required placeholder="2026-2027" defaultValue={profileDefaults.academicYear} /></label>
 <label>University Registration Number *<input name="registrationNumber" required defaultValue={profileDefaults.registrationNumber} /></label>
 <label>College Roll Number *<input name="rollNumber" required defaultValue={profileDefaults.rollNumber} /></label>
-<label className="application-full-width">Internship Sector *<select name="sectorChoice" required value={selectedForApply.sector_id || ""} onChange={(event) => { const match = internships.find(item => item.sector_id === event.target.value); if (match) setSelectedForApply(match); }}><option value="" disabled>Select active internship sector</option>{Array.from(new Map(internships.filter(item => item.sector_id).map(item => [item.sector_id!, {id:item.sector_id!,name:sectorName(item.sectors)}])).values()).map(sector => <option key={sector.id} value={sector.id}>{sector.name}</option>)}</select></label>
+<label className="application-full-width">Internship Sector *<select name="sectorChoice" required value={selectedForApply.sector_id || ""} onChange={(event) => { const sector = activeSectors.find(item => item.id === event.target.value); const match = internships.find(item => item.sector_id === event.target.value); if (match) setSelectedForApply(match); else if (sector) setSelectedForApply({ id: "", title: sector.name, description: sector.description, sector_id: sector.id, mode: "onsite", location: null, duration_weeks: null, published_at: null, sectors: { id: sector.id, name: sector.name } }); }}><option value="" disabled>Select active internship sector</option>{activeSectors.map(sector => <option key={sector.id} value={sector.id}>{sector.name}</option>)}</select></label>
 <label>Internship Mode *<select name="mode" required defaultValue={selectedForApply.mode}><option value="onsite">Offline / On-site</option><option value="hybrid">Hybrid</option><option value="remote">Online / Virtual</option></select></label>
 <label>Required Hours<input name="requiredHours" value="120" readOnly /></label><label>Credits<input name="credits" value="4" readOnly /></label>
 <label>Preferred Start Date *<input name="preferredStartDate" type="date" required /></label><label>Preferred End Date *<input name="preferredEndDate" type="date" required /></label>
