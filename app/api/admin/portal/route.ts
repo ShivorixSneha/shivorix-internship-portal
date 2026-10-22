@@ -35,7 +35,7 @@ export async function GET(request: Request) {
         .select("id,name,university_name,city,state,nodal_officer_id,created_at")
         .order("name"),
       client.from("internships")
-        .select("id,title,description,mode,location,duration_weeks,is_active,published_at,created_at")
+        .select("id,title,description,mode,location,duration_weeks,fee_amount,is_active,published_at,created_at")
         .order("created_at", { ascending: false }).limit(100),
       client.from("internship_applications")
         .select("id,status,applied_at,updated_at,profiles(full_name,email),internships(title)")
@@ -233,9 +233,11 @@ export async function PATCH(request: Request) {
       const mode = typeof body.mode === "string" ? body.mode : "";
       const location = typeof body.location === "string" ? body.location.trim() : "";
       const durationWeeks = body.durationWeeks === "" || body.durationWeeks == null ? null : Number(body.durationWeeks);
+      const feeAmount = body.feeAmount === "" || body.feeAmount == null ? null : Number(body.feeAmount);
       if (!internshipId || title.length < 3 || title.length > 160 || description.length < 10 || description.length > 5000 || !["remote", "hybrid", "onsite"].includes(mode)) return NextResponse.json({ error: "Check the internship title, description, and mode." }, { status: 400 });
       if (durationWeeks !== null && (!Number.isInteger(durationWeeks) || durationWeeks < 1 || durationWeeks > 104)) return NextResponse.json({ error: "Duration must be between 1 and 104 weeks." }, { status: 400 });
-      const { data, error } = await client.from("internships").update({ title, description, mode, location: location || null, duration_weeks: durationWeeks, updated_at: new Date().toISOString() }).eq("id", internshipId).select("id").maybeSingle();
+      if (feeAmount !== null && (!Number.isFinite(feeAmount) || feeAmount < 0 || feeAmount > 1000000)) return NextResponse.json({ error: "Fee must be between ₹0 and ₹10,00,000." }, { status: 400 });
+      const { data, error } = await client.from("internships").update({ title, description, mode, location: location || null, duration_weeks: durationWeeks, fee_amount: feeAmount, updated_at: new Date().toISOString() }).eq("id", internshipId).select("id").maybeSingle();
       if (error || !data) return NextResponse.json({ error: "Internship details could not be updated." }, { status: 400 });
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
