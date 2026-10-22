@@ -106,7 +106,7 @@ export default function InternshipsPage() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || "Application could not be submitted.");
-      setNotice(result.message || "Application submitted successfully.");
+      setNotice((result.message || "Application submitted successfully.") + (result.applicationNumber ? " Application number: " + result.applicationNumber + "." : ""));
       setSelectedForApply(null);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Application could not be submitted.");
