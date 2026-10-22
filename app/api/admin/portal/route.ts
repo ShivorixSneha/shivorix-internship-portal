@@ -336,11 +336,12 @@ export async function PATCH(request: Request) {
     if (body.action === "application_status") {
       const id = typeof body.id === "string" ? body.id : "";
       const status = typeof body.status === "string" ? body.status : "";
+      const reviewRemarks = typeof body.reviewRemarks === "string" ? body.reviewRemarks.trim().slice(0, 2000) : undefined;
       if (!id || !["submitted", "under_review", "accepted", "rejected", "withdrawn"].includes(status)) {
         return NextResponse.json({ error: "Application ID or status is invalid." }, { status: 400 });
       }
       const { data, error } = await client.from("internship_applications")
-        .update({ status, nodal_review_status: status === "accepted" ? "approved" : status === "rejected" ? "rejected" : status === "under_review" ? "under_review" : "pending", updated_at: new Date().toISOString() }).eq("id", id).select("id,status,application_number,nodal_review_status").maybeSingle();
+        .update({ status, nodal_review_status: status === "accepted" ? "approved" : status === "rejected" ? "rejected" : status === "under_review" ? "under_review" : "pending", ...(reviewRemarks === undefined ? {} : { review_remarks: reviewRemarks || null }), updated_at: new Date().toISOString() }).eq("id", id).select("id,status,application_number,nodal_review_status,review_remarks").maybeSingle();
       if (error || !data) {
         console.error("Admin application update failed:", error?.message || "record not found");
         return NextResponse.json({ error: "Application status could not be updated." }, { status: 400 });
