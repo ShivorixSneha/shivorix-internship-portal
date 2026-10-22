@@ -24,14 +24,14 @@ async function authorizedStaff(request: Request, admin: ReturnType<typeof adminC
 export async function GET() {
   try {
     const admin = adminClient();
-    const { data, error } = await admin
-      .from("internships")
-      .select("id,title,description,sector_id,mode,location,duration_weeks,fee_amount,published_at,sectors(id,name)")
-      .eq("is_active", true)
-      .not("published_at", "is", null)
-      .order("published_at", { ascending: false });
-    if (error) throw error;
-    return NextResponse.json({ internships: data ?? [] }, { headers: { "Cache-Control": "no-store" } });
+    const [internshipResult, sectorResult] = await Promise.all([
+      admin.from("internships")
+        .select("id,title,description,sector_id,mode,location,duration_weeks,fee_amount,published_at,sectors(id,name)")
+        .eq("is_active", true).not("published_at", "is", null).order("published_at", { ascending: false }),
+      admin.from("sectors").select("id,name,category,description").eq("is_active", true).order("name"),
+    ]);
+    if (internshipResult.error || sectorResult.error) throw internshipResult.error || sectorResult.error;
+    return NextResponse.json({ internships: internshipResult.data ?? [], sectors: sectorResult.data ?? [] }, { headers: { "Cache-Control": "no-store" } });
   } catch {
     return NextResponse.json({ error: "Internship listings are temporarily unavailable." }, { status: 503 });
   }
