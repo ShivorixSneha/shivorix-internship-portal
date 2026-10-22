@@ -10,6 +10,7 @@ type Internship = {
   id: string;
   title: string;
   description: string | null;
+  sector_id: string | null;
   mode: "remote" | "onsite" | "hybrid";
   location: string | null;
   duration_weeks: number | null;
