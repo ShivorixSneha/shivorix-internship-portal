@@ -65,7 +65,7 @@ export async function POST(request: Request) {
       { id: studentResult.user.id, role: "student", full_name: "Demo Student", email: studentEmail, phone: "9000000002", roll_number: "123456789012", registration_number: "123456789012345", college_id: college.id, institution_name: collegeName, course: "BCA", academic_year: "2026-2027", current_semester: "Semester V", father_name: "Demo Parent", mother_name: "Demo Parent", gender: "Prefer not to say", address: "Sample address only" },
     ];
     for (const item of profiles) {
-      const result = await client.from("profiles").upsert(item, { onConflict: "id" });
+      const result = await client.from("profiles").upsert(item as any, { onConflict: "id" });
       if (result.error) throw result.error;
     }
 
