@@ -26,7 +26,7 @@ export async function GET() {
     const admin = adminClient();
     const { data, error } = await admin
       .from("internships")
-      .select("id,title,description,mode,location,duration_weeks,published_at,sectors(name)")
+      .select("id,title,description,mode,location,duration_weeks,fee_amount,published_at,sectors(name)")
       .eq("is_active", true)
       .not("published_at", "is", null)
       .order("published_at", { ascending: false });
@@ -50,6 +50,7 @@ export async function POST(request: Request) {
     const mode = typeof body.mode === "string" ? body.mode : "remote";
     const location = typeof body.location === "string" ? body.location.trim() : "";
     const durationWeeks = body.durationWeeks === "" || body.durationWeeks == null ? null : Number(body.durationWeeks);
+    const feeAmount = body.feeAmount === "" || body.feeAmount == null ? null : Number(body.feeAmount);
 
     if (title.length < 3 || title.length > 160) {
       return NextResponse.json({ error: "Title must be between 3 and 160 characters." }, { status: 400 });
@@ -60,6 +61,7 @@ export async function POST(request: Request) {
     if (!["remote", "onsite", "hybrid"].includes(mode)) {
       return NextResponse.json({ error: "Choose a valid internship mode." }, { status: 400 });
     }
+    if (feeAmount !== null && (!Number.isFinite(feeAmount) || feeAmount < 0 || feeAmount > 1000000)) return NextResponse.json({ error: "Fee must be between ₹0 and ₹10,00,000." }, { status: 400 });
     if (durationWeeks !== null && (!Number.isInteger(durationWeeks) || durationWeeks < 1 || durationWeeks > 104)) {
       return NextResponse.json({ error: "Duration must be between 1 and 104 weeks." }, { status: 400 });
     }
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
 
     const { data, error } = await admin.from("internships").insert({
       title, description, sector_id: sectorId || null, mode,
-      location: location || null, duration_weeks: durationWeeks,
+      location: location || null, duration_weeks: durationWeeks, fee_amount: feeAmount,
       is_active: true, published_at: new Date().toISOString(), created_by: user.id
     }).select("id,title,description,mode,location,duration_weeks,published_at,sectors(name)").single();
     if (error) throw error;
