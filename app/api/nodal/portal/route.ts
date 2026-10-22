@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     const studentIds = (students ?? []).map((student) => student.id);
     const { data: applications, error: applicationsError } = studentIds.length
       ? await client.from("internship_applications")
-          .select("id,student_id,internship_id,status,applied_at,updated_at,profiles(full_name,email),internships(title)")
+          .select("id,application_number,student_id,internship_id,college_id,sector_id,mode,requested_hours,requested_credits,preferred_start_date,preferred_end_date,state,city,pin_code,full_address,nodal_review_status,review_remarks,status,applied_at,updated_at,profiles(full_name,email),internships(title),sectors(name),portal_documents(id,document_type,status,metadata)")
           .in("student_id", studentIds).order("applied_at", { ascending: false }).limit(500)
       : { data: [], error: null };
     if (applicationsError) throw applicationsError;
@@ -260,12 +260,12 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: "This application has already been decided or activated and cannot be changed." }, { status: 409 });
     }
     const now = new Date().toISOString();
-    const update: Record<string, unknown> = { status, updated_at: now };
+    const update: Record<string, unknown> = { status, nodal_review_status: status === "accepted" ? "approved" : status === "rejected" ? "rejected" : "under_review", updated_at: now };
     if (status === "accepted") { update.approved_by = auth.user.id; update.approved_at = now; }
     if (status === "rejected") { update.rejected_by = auth.user.id; update.rejected_at = now; }
     const { data: application, error: updateError } = await client.from("internship_applications")
       .update(update).eq("id", applicationId).in("student_id", studentIds)
-      .select("id,status,approved_at,rejected_at").maybeSingle();
+      .select("id,status,application_number,nodal_review_status,approved_at,rejected_at").maybeSingle();
     if (updateError || !application) return NextResponse.json({ error: "Application review could not be saved." }, { status: 400 });
     return NextResponse.json({ success: true, application }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
