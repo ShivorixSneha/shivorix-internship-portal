@@ -73,7 +73,10 @@ export default function StudentDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [activeSection, setActiveSection] = useState("Overview");
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);\n  const [dobDraft, setDobDraft] = useState("");\n  const [profileBusy, setProfileBusy] = useState(false);\n  const [profileNotice, setProfileNotice] = useState("");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [dobDraft, setDobDraft] = useState("");
+  const [profileBusy, setProfileBusy] = useState(false);
+  const [profileNotice, setProfileNotice] = useState("");
 
   useEffect(() => {
     let active = true;
