@@ -67,3 +67,11 @@ on conflict (id) do update set
   public = false,
   file_size_limit = 10485760,
   allowed_mime_types = excluded.allowed_mime_types;
+
+ 
+alter table public.internship_attendance
+  add column if not exists application_id uuid references public.internship_applications(id) on delete set null,
+  add column if not exists check_in_at timestamptz,
+  add column if not exists check_out_at timestamptz;
+create index if not exists internship_attendance_application_date_idx
+  on public.internship_attendance(application_id, attendance_date desc);
