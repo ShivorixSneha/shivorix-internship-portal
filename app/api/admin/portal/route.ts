@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       if (college.nodal_officer_id) return NextResponse.json({ error: "This college already has a Nodal Officer assigned. Remove or replace the current assignment first." }, { status: 409 });
       const { data: created, error: createError } = await client.auth.admin.createUser({
         email, password, email_confirm: true,
-        user_metadata: { full_name: fullName, mobile_number: mobileNumber, provisioned_by: "admin" },
+        user_metadata: { full_name: fullName, mobile_number: mobileNumber, provisioned_by: "admin" },\n        ban_duration: nodalStatus === "inactive" ? "876000h" : "none",
       });
       if (createError || !created.user) {
         const message = createError?.message.toLowerCase().includes("already") ? "An account with this email already exists. Use a different email or contact the administrator." : "Could not create the staff login. Check the email and server configuration.";
