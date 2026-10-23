@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { getSupabaseBrowserClient } from "../../lib/supabase";
 
 type SectorRelation = { id?: string; name: string } | { id?: string; name: string }[] | null;
@@ -32,6 +32,10 @@ function sectorName(value: SectorRelation) {
 
 export default function InternshipsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const studentPanel = searchParams.get("panel") === "student";
+  const [registeredSectorNames, setRegisteredSectorNames] = useState<string[]>([]);
+  const [alreadyApplied, setAlreadyApplied] = useState(false);
   const [internships, setInternships] = useState<Internship[]>([]);
   const [activeSectors, setActiveSectors] = useState<GuidelineSector[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +68,11 @@ export default function InternshipsPage() {
       if (!session) return;
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) return;
+      const metadataSectors = userData.user.user_metadata?.sector_names;
+      const sectorNames = Array.isArray(metadataSectors) ? metadataSectors.filter((value: unknown): value is string => typeof value === "string") : [];
+      setRegisteredSectorNames(sectorNames);
+      const statusResponse = await fetch("/api/internships/apply", { headers: { Authorization: `Bearer ${session.access_token}` }, cache: "no-store" });
+      if (statusResponse.ok) { const statusResult = await statusResponse.json(); setAlreadyApplied(Boolean(statusResult.alreadyApplied)); }
       const { data } = await supabase.from("profiles")
         .select("full_name,phone,email,father_name,mother_name,date_of_birth,gender,address,city,state,pin_code,roll_number,registration_number,course,branch,academic_year,current_semester,institution_name,college_id,colleges(name,university_name)")
         .eq("id", userData.user.id).maybeSingle();
@@ -83,6 +92,14 @@ export default function InternshipsPage() {
   }
 
   useEffect(() => { void loadInternships(); void loadStudentProfile(); }, []);
+
+  useEffect(() => {
+    if (!studentPanel || !registeredSectorNames.length || !activeSectors.length || selectedForApply || alreadyApplied) return;
+    const sector = activeSectors.find(item => registeredSectorNames.some(name => name.toLowerCase() === item.name.toLowerCase()));
+    if (!sector) return;
+    const match = internships.find(item => item.sector_id === sector.id);
+    setSelectedForApply(match || { id: "", title: sector.name, description: sector.description, sector_id: sector.id, mode: "onsite", location: null, duration_weeks: null, published_at: null, sectors: { id: sector.id, name: sector.name } });
+  }, [studentPanel, registeredSectorNames, activeSectors, internships, selectedForApply, alreadyApplied]);
 
   async function apply(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -108,8 +125,9 @@ export default function InternshipsPage() {
         body: form,
       });
       const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Application could not be submitted.");
+      if (!response.ok) { if (response.status === 409) setAlreadyApplied(true); throw new Error(result.error || "Application could not be submitted."); }
       setNotice((result.message || "Application submitted successfully.") + (result.applicationNumber ? " Application number: " + result.applicationNumber + "." : ""));
+      setAlreadyApplied(true);
       setSelectedForApply(null);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : "Application could not be submitted.");
@@ -120,11 +138,11 @@ export default function InternshipsPage() {
 
   return (
     <main className="opportunities-page">
-      <header className="opportunities-nav">
+      {!studentPanel && <header className="opportunities-nav">
         <Link href="/" className="opportunities-brand"><span className="opportunities-mark">S</span><span><b>SHIVORIX</b><small>GROWTH · VISION · SUCCESS</small></span></Link>
         <nav><Link href="/">Home</Link><Link href="/login">Student Login</Link><Link href="/register" className="opportunities-register">Register ↗</Link></nav>
-      </header>
-      <section className="opportunities-hero">
+      </header>}
+      {!studentPanel && <section className="opportunities-hero">
         <span className="opportunities-eyebrow">STUDENT OPPORTUNITIES</span>
         <h1>Find the right place<br /><em>to begin your career.</em></h1>
         <p>Explore published internship opportunities here. Read each listing carefully before you choose.</p>
@@ -132,7 +150,7 @@ export default function InternshipsPage() {
         <Link href="/register" className="opportunities-cta">Create student profile <span>→</span></Link>
       </section>
 
-      <section className="domain-section">
+      {!studentPanel && <section className="domain-section">
         <div className="domain-heading"><span>LIVE OPPORTUNITIES</span><h2>Published internships</h2><p>Only active opportunities published by the portal team appear below.</p></div>
         {notice && <p role="status" className="auth-alert">{notice}</p>}
         {loading ? <p>Checking published opportunities…</p> : loadError ? <button className="opportunities-cta" onClick={() => void loadInternships()}>Try again ↻</button> : internships.length === 0 ? <div className="opportunities-status"><div><b>No live vacancies yet</b><small>Career areas below are examples, not active vacancies.</small></div></div> : (
@@ -151,12 +169,14 @@ export default function InternshipsPage() {
         )}
       </section>
 
-      <section className="domain-section">
+      {!studentPanel && <section className="domain-section">
         <div className="domain-heading"><span>ACTIVE GUIDELINE SECTORS</span><h2>Apply by internship sector</h2><p>Choose an active sector to submit your academic internship application. A published vacancy is not required to start a sector-based application.</p></div>
         {activeSectors.length ? <div className="domain-grid">{activeSectors.map(sector => <article className="domain-card" key={sector.id}><span>{sector.category || "GUIDELINE SECTOR"}</span><h3>{sector.name}</h3><p>{sector.description || "Submit your internship application for this active guideline sector."}</p><button className="opportunities-cta" onClick={() => { const match = internships.find(item => item.sector_id === sector.id); setSelectedForApply(match || { id: "", title: sector.name, description: sector.description, sector_id: sector.id, mode: "onsite", location: null, duration_weeks: null, published_at: null, sectors: { id: sector.id, name: sector.name } }); }}>Apply by sector →</button></article>)}</div> : <div className="opportunities-status"><div><b>No active guideline sectors configured</b><small>The portal administrator must activate the applicable sectors before applications can be submitted.</small></div></div>}
-      </section>
+      </section>}
 
-      {selectedForApply && <div className="application-modal-backdrop" role="presentation"><section className="application-modal" role="dialog" aria-modal="true" aria-labelledby="application-form-title"><button type="button" className="application-modal-close" onClick={() => setSelectedForApply(null)} aria-label="Close application form">×</button><span className="opportunities-eyebrow">SEMESTER V · STUDENT APPLICATION</span><h2 id="application-form-title">Complete your application</h2><p>Complete all required details, upload five documents (maximum 10 MB each), and accept all three declarations.</p><form key={profileDefaults.email || "student-application"} className="application-details-form" onSubmit={apply} encType="multipart/form-data">
+      {studentPanel && alreadyApplied && <section className="domain-section"><h2>Application already submitted</h2><p>You can submit only one internship application. Please track its status in My Application.</p></section>}
+      {studentPanel && !selectedForApply && !alreadyApplied && !loading && <section className="domain-section"><h2>Application form unavailable</h2><p>{registeredSectorNames.length ? "Your registered sector does not match an active sector. Contact the portal administrator." : "Your registration does not contain a sector. Contact the portal administrator."}</p></section>}
+      {selectedForApply && <div className={studentPanel ? "application-inline-wrap" : "application-modal-backdrop"} role="presentation"><section className={studentPanel ? "application-modal application-inline" : "application-modal"} role={studentPanel ? undefined : "dialog"} aria-modal={studentPanel ? undefined : true} aria-labelledby="application-form-title">{!studentPanel && <button type="button" className="application-modal-close" onClick={() => setSelectedForApply(null)} aria-label="Close application form">×</button>}<span className="opportunities-eyebrow">SEMESTER V · STUDENT APPLICATION</span><h2 id="application-form-title">Complete your application</h2><p>Complete all required details, upload five documents (maximum 10 MB each), and accept all three declarations.</p><form key={profileDefaults.email || "student-application"} className="application-details-form" onSubmit={apply} encType="multipart/form-data">
 <label>Full name *<input name="fullName" required autoComplete="name" defaultValue={profileDefaults.fullName} /></label>
 <label>Father's name *<input name="fatherName" required defaultValue={profileDefaults.fatherName} /></label>
 <label>Mother's name *<input name="motherName" required defaultValue={profileDefaults.motherName} /></label>
