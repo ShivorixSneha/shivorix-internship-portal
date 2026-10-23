@@ -147,7 +147,7 @@ export default function InternshipsPage() {
         <p>Explore published internship opportunities here. Read each listing carefully before you choose.</p>
         <div className="opportunities-status"><span className="status-dot" /><div><b>{loading ? "Loading current opportunities…" : loadError ? "Listings could not be loaded" : internships.length ? `${internships.length} published opportunity${internships.length === 1 ? "" : "ies"}` : "No internship listings published yet"}</b><small>{loadError || (internships.length ? "Open an opportunity to review its details and apply." : "New opportunities will appear here when authorized portal staff publish them.")}</small></div></div>
         <Link href="/register" className="opportunities-cta">Create student profile <span>→</span></Link>
-      </section>
+      </section>}
 
       {!studentPanel && <section className="domain-section">
         <div className="domain-heading"><span>LIVE OPPORTUNITIES</span><h2>Published internships</h2><p>Only active opportunities published by the portal team appear below.</p></div>
