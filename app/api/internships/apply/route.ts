@@ -51,6 +51,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Your college does not have an assigned Nodal Officer yet. Contact your college or portal admin before applying." }, { status: 400 });
     }
 
+    const { data: priorApplications, error: priorApplicationsError } = await client.from("internship_applications").select("id,application_number,status").eq("student_id", authData.user.id).limit(1);
+    if (priorApplicationsError) throw priorApplicationsError;
+    if (priorApplications?.length) return NextResponse.json({ error: "You have already submitted your one internship application. Please track it in My Application; a second application is not allowed." }, { status: 409, existingApplication: priorApplications[0].application_number });
+
     const form = await request.formData();
     const internshipId = text(form, "internshipId");
     const sectorId = text(form, "sectorId");
