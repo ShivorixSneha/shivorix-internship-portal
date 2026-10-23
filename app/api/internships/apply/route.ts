@@ -26,6 +26,21 @@ function validDate(value: string) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + "T00:00:00Z"));
 }
 
+export async function GET(request: Request) {
+  try {
+    const client = serverClient();
+    const token = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "");
+    if (!token) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
+    const { data, error } = await client.auth.getUser(token);
+    if (error || !data.user) return NextResponse.json({ error: "Session expired." }, { status: 401 });
+    const { data: applications, error: queryError } = await client.from("internship_applications").select("application_number,status").eq("student_id", data.user.id).limit(1);
+    if (queryError) throw queryError;
+    return NextResponse.json({ alreadyApplied: Boolean(applications?.length), applicationNumber: applications?.[0]?.application_number ?? null, status: applications?.[0]?.status ?? null });
+  } catch (error) {
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Could not check application status." }, { status: 500 });
+  }
+}
+
 export async function POST(request: Request) {
   const client = serverClient();
   let applicationId = "";
@@ -53,7 +68,7 @@ export async function POST(request: Request) {
 
     const { data: priorApplications, error: priorApplicationsError } = await client.from("internship_applications").select("id,application_number,status").eq("student_id", authData.user.id).limit(1);
     if (priorApplicationsError) throw priorApplicationsError;
-    if (priorApplications?.length) return NextResponse.json({ error: "You have already submitted your one internship application. Please track it in My Application; a second application is not allowed." }, { status: 409, existingApplication: priorApplications[0].application_number });
+    if (priorApplications?.length) return NextResponse.json({ error: "You have already submitted your one internship application. Please track it in My Application; a second application is not allowed.", alreadyApplied: true, existingApplication: priorApplications[0].application_number }, { status: 409 });
 
     const form = await request.formData();
     const internshipId = text(form, "internshipId");
