@@ -9,6 +9,7 @@ function SiteFooter() {
   return (
     <footer className="site-footer">
       <span>SHIVORIX · GROWTH · VISION · SUCCESS</span>
+      <Link href="/guidelines">Portal & Internship Guidelines ↗</Link>
       <a href="https://www.shivorixai.com/home" target="_blank" rel="noreferrer">Official website ↗</a>
       <div className="footer-legal">
         <span>© 2026 @shivorix</span>
