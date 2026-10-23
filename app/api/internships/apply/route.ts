@@ -29,7 +29,7 @@ function validDate(value: string) {
 export async function GET(request: Request) {
   try {
     const client = serverClient();
-    const token = request.headers.get("authorization")?.replace(/^Bearer\\s+/i, "");
+    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
     if (!token) return NextResponse.json({ error: "Sign in required." }, { status: 401 });
     const { data, error } = await client.auth.getUser(token);
     if (error || !data.user) return NextResponse.json({ error: "Session expired." }, { status: 401 });
