@@ -404,3 +404,7 @@ a{color:inherit}
 .application-details-form input:focus,.application-details-form select:focus,.application-details-form textarea:focus{outline:2px solid #d6b9fa;border-color:#7d42c5}
 .application-full-width{grid-column:1/-1}.application-modal-summary{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#f7f1ff;border:1px solid #e6d5fb;border-radius:10px;padding:12px;color:#4c168c}.application-modal-summary span{font-size:12px}
 @media(max-width:600px){.application-modal{padding:22px 16px}.application-details-form{grid-template-columns:1fr}.application-full-width{grid-column:auto}.application-modal-summary{display:grid}}
+
+
+/* Student dashboard application embed: show only the form, without opportunity cards. */
+.application-inline-wrap{width:min(100%,1000px);margin:0 auto;padding:8px 0 32px;display:block}.application-modal.application-inline{width:100%;max-width:100%;max-height:none;overflow:visible;box-shadow:none;border:1px solid #e8def3;border-radius:16px;padding:28px;background:#fff}.application-inline .application-details-form{margin-top:20px}
