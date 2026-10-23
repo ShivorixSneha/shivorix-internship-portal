@@ -1,5 +1,3 @@
-"use server";
-
 import InternshipsClient from "./InternshipsClient";
 
 type PageProps = { searchParams: Promise<{ panel?: string }> };
