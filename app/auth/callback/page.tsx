@@ -99,6 +99,7 @@ export default function AuthCallbackPage() {
               {resendMessage && <p className="auth-subtitle" role="status">{resendMessage}</p>}
               {resendError && <p className="auth-alert auth-error" role="alert">{resendError}</p>}
               <Link className="auth-option-link" href="/register">Return to registration →</Link>
+            </>
           ) : (
             <p className="auth-subtitle">Please keep this page open for a moment.</p>
           )}
