@@ -12,6 +12,7 @@ export default function Login() {
   const [rollNumber, setRollNumber] = useState("");
   const [registrationNumber, setRegistrationNumber] = useState("");
   const [password, setPassword] = useState("");
+  const [registeredEmail, setRegisteredEmail] = useState("");
   const [otp, setOtp] = useState("");
   const [otpEmail, setOtpEmail] = useState("");
   const [maskedEmail, setMaskedEmail] = useState("");
@@ -35,93 +36,67 @@ export default function Login() {
   }
 
   async function submitPassword(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!validIdentifiers()) return;
+    event.preventDefault(); if (!validIdentifiers()) return;
+    if (!registeredEmail.trim()) { setError("Enter the email address you used during registration."); return; }
     setBusy(true); setError(""); setNotice(""); setShowResendVerification(false);
     try {
-      const response = await fetch("/api/auth/student-login", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rollNumber: rollNumber.trim(), registrationNumber: registrationNumber.trim(), password }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Unable to sign in. Check your details and try again.");
-      const { error: sessionError } = await getSupabaseBrowserClient().auth.setSession({
-        access_token: result.session.access_token, refresh_token: result.session.refresh_token,
-      });
-      if (sessionError) throw sessionError;
+      const supabase = getSupabaseBrowserClient();
+      const { data, error: authError } = await supabase.auth.signInWithPassword({ email: registeredEmail.trim().toLowerCase(), password });
+      if (authError || !data.user || !data.session) { if (authError?.message.toLowerCase().includes("email not confirmed")) setShowResendVerification(true); throw authError || new Error("Unable to sign in."); }
+      const { data: profile, error: profileError } = await supabase.from("profiles").select("role,roll_number,registration_number").eq("id", data.user.id).maybeSingle();
+      const meta = data.user.user_metadata || {};
+      if (profileError || (profile?.role || meta.role) !== "student" || String(profile?.roll_number || meta.roll_number || "").trim() !== rollNumber.trim() || String(profile?.registration_number || meta.registration_number || "").trim() !== registrationNumber.trim()) { await supabase.auth.signOut(); throw new Error("These Roll Number and Registration Number do not match this email account."); }
       router.push("/student/dashboard"); router.refresh();
-    } catch (e) { const message = e instanceof Error ? e.message : "Sign-in failed. Please try again."; setError(message); setShowResendVerification(/verify your registered email|email first|email not confirmed/i.test(message)); }
-    finally { setBusy(false); }
+    } catch (e) { const message = e instanceof Error ? e.message : "Sign-in failed. Please try again."; setError(message); if (/verify your registered email|email not confirmed/i.test(message)) setShowResendVerification(true); } finally { setBusy(false); }
   }
 
   async function requestOtp() {
     if (cooldown > 0 || !validIdentifiers()) return;
+    if (!registeredEmail.trim()) { setError("Enter the email address you used during registration."); return; }
     setBusy(true); setError(""); setNotice(""); setShowResendVerification(false);
     try {
-      const response = await fetch("/api/auth/student-otp", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rollNumber: rollNumber.trim(), registrationNumber: registrationNumber.trim() }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "OTP could not be sent.");
-      setOtpEmail(result.email); setMaskedEmail(result.maskedEmail || "your registered email");
-      setCooldown(60); setNotice("OTP sent to " + (result.maskedEmail || "your registered email") + ". Check your inbox.");
-    } catch (e) { setError(e instanceof Error ? e.message : "OTP could not be sent."); setShowResendVerification(true); }
-    finally { setBusy(false); }
+      const email = registeredEmail.trim().toLowerCase();
+      const { error: otpError } = await getSupabaseBrowserClient().auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
+      if (otpError) throw otpError;
+      setOtpEmail(email); setMaskedEmail(email.replace(/^(.{2}).*(@.*)$/, "$1***$2")); setCooldown(60);
+      setNotice("OTP request submitted. Check your Inbox and Spam folders.");
+    } catch (e) { setError(e instanceof Error ? e.message : "OTP could not be sent."); setShowResendVerification(true); } finally { setBusy(false); }
   }
 
   async function verifyOtp(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!otpEmail) { setError("Request an OTP first."); return; }
+    event.preventDefault(); if (!otpEmail) { setError("Request an OTP first."); return; }
     if (!/^\d{6}$/.test(otp.trim())) { setError("Enter the 6-digit OTP from your email."); return; }
     setBusy(true); setError(""); setNotice("");
     try {
-      const { data, error: verifyError } = await getSupabaseBrowserClient().auth.verifyOtp({
-        email: otpEmail, token: otp.trim(), type: "email",
-      });
+      const supabase = getSupabaseBrowserClient();
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({ email: otpEmail, token: otp.trim(), type: "email" });
       if (verifyError || !data.session || !data.user) throw verifyError || new Error("OTP verification did not create a session.");
-      const { data: profile, error: profileError } = await getSupabaseBrowserClient().from("profiles")
-        .select("role").eq("id", data.user.id).maybeSingle();
-      if (profileError || profile?.role !== "student") {
-        await getSupabaseBrowserClient().auth.signOut();
-        throw new Error("Only student accounts can use student OTP login.");
-      }
+      const { data: profile, error: profileError } = await supabase.from("profiles").select("role,roll_number,registration_number").eq("id", data.user.id).maybeSingle();
+      const meta = data.user.user_metadata || {};
+      if (profileError || (profile?.role || meta.role) !== "student" || String(profile?.roll_number || meta.roll_number || "").trim() !== rollNumber.trim() || String(profile?.registration_number || meta.registration_number || "").trim() !== registrationNumber.trim()) { await supabase.auth.signOut(); throw new Error("These Roll Number and Registration Number do not match this email account."); }
       router.push("/student/dashboard"); router.refresh();
-    } catch (e) { setError(e instanceof Error ? e.message : "OTP verification failed. Try again."); }
-    finally { setBusy(false); }
+    } catch (e) { setError(e instanceof Error ? e.message : "OTP verification failed. Try again."); } finally { setBusy(false); }
   }
 
   async function requestVerificationEmail() {
-    if (!validIdentifiers()) return;
+    if (!registeredEmail.trim() || !/^\S+@\S+\.\S+$/.test(registeredEmail.trim())) { setError("Enter the email address you used during registration."); return; }
     setBusy(true); setError(""); setNotice(""); setShowResendVerification(false);
     try {
-      const response = await fetch("/api/auth/student-resend-verification", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rollNumber: rollNumber.trim(), registrationNumber: registrationNumber.trim() }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Verification email could not be requested.");
-      setNotice(result.message || "Check your email inbox and spam folder for the latest verification link.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Verification email could not be requested.");
-    } finally { setBusy(false); }
+      const { error: resendError } = await getSupabaseBrowserClient().auth.resend({ type: "signup", email: registeredEmail.trim().toLowerCase(), options: { emailRedirectTo: window.location.origin + "/auth/callback" } });
+      if (resendError) throw resendError;
+      setNotice("If this email has a pending registration, a fresh verification link has been requested. Check Inbox and Spam, and open the newest email.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Verification email could not be requested."); } finally { setBusy(false); }
   }
 
   async function requestPasswordReset() {
-    if (!validIdentifiers()) return;
+    if (!registeredEmail.trim() || !/^\S+@\S+\.\S+$/.test(registeredEmail.trim())) { setError("Enter the email address you used during registration."); return; }
     setBusy(true); setError(""); setNotice("");
     try {
-      const response = await fetch("/api/auth/student-password-reset", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rollNumber: rollNumber.trim(), registrationNumber: registrationNumber.trim() }),
-      });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "Password reset could not be started.");
-      setNotice(result.message || "Check your registered email for a password reset link.");
-    } catch (e) { setError(e instanceof Error ? e.message : "Password reset could not be started."); }
-    finally { setBusy(false); }
+      const { error: resetError } = await getSupabaseBrowserClient().auth.resetPasswordForEmail(registeredEmail.trim().toLowerCase(), { redirectTo: window.location.origin + "/auth/callback?next=/reset-password" });
+      if (resetError) throw resetError;
+      setNotice("If an account exists for this email, a password reset link has been requested. Check Inbox and Spam.");
+    } catch (e) { setError(e instanceof Error ? e.message : "Password reset could not be started."); } finally { setBusy(false); }
   }
-
   return <main className="auth-page"><div className="auth-orb auth-orb-one"/><div className="auth-orb auth-orb-two"/><section className="auth-card auth-card-login">
     <aside className="auth-visual-panel"><Link href="/" className="auth-visual-logo"><img src="/shivorix-logo.svg" alt="SHIVORIX logo"/></Link><span className="auth-visual-kicker">YOUR NEXT CHAPTER STARTS HERE</span><h2>Learn. Build.<br/><em>Become more.</em></h2><p>Discover opportunities, build real-world skills and take the next step in your career with SHIVORIX.</p><div className="auth-visual-list"><span><b>01</b> Explore internship opportunities</span><span><b>02</b> Build your professional profile</span><span><b>03</b> Grow with real experience</span></div><div className="auth-visual-decoration"/></aside>
     <div className="auth-main-content"><Link href="/auth" className="auth-brand"><img src="/shivorix-logo.svg" alt="SHIVORIX logo" className="auth-logo-image"/><span><b>SHIVORIX</b><small>GROWTH · VISION · SUCCESS</small></span></Link>
@@ -129,6 +104,7 @@ export default function Login() {
       <p className="auth-subtitle">Sign in with your Roll Number and Registration Number using your password or registered email OTP.</p>
       <div className="auth-mode-switch"><button type="button" className={mode==="password"?"active":""} onClick={()=>{setMode("password");setError("");setNotice("");}}>Password</button><button type="button" className={mode==="otp"?"active":""} onClick={()=>{setMode("otp");setError("");setNotice("");}}>Email OTP</button></div>
       <div className="auth-form">
+        <label>Registered email address<input type="email" value={registeredEmail} onChange={e=>setRegisteredEmail(e.target.value)} autoComplete="email" placeholder="you@example.com" maxLength={254} required/></label>
         <label>Roll number<input type="text" inputMode="numeric" value={rollNumber} onChange={e=>setRollNumber(e.target.value.replace(/\D/g,"").slice(0,12))} autoComplete="username" placeholder="12-digit roll number" pattern="[0-9]{12}" minLength={12} maxLength={12} title="Enter exactly 12 digits." required/></label>
         <label>Registration number<input type="text" inputMode="numeric" value={registrationNumber} onChange={e=>setRegistrationNumber(e.target.value.replace(/\D/g,"").slice(0,15))} placeholder="15-digit registration number" pattern="[0-9]{15}" minLength={15} maxLength={15} title="Enter exactly 15 digits." required/></label>
         {mode==="password" ? <form onSubmit={submitPassword}><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" placeholder="Enter your password" required maxLength={128}/></label><button className="auth-submit" disabled={busy}>{busy?"Signing in…":"Sign in to student portal"} <span>→</span></button><button type="button" className="auth-text-action" onClick={()=>void requestPasswordReset()} disabled={busy}>Forgot password? Send reset link</button></form> :
