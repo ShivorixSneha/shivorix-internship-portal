@@ -20,6 +20,7 @@ export default function Login() {
   const [cooldown, setCooldown] = useState(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [showResendVerification, setShowResendVerification] = useState(false);
 
   useEffect(() => {
     if (cooldown <= 0) return;
@@ -36,7 +37,7 @@ export default function Login() {
   async function submitPassword(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!validIdentifiers()) return;
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError(""); setNotice(""); setShowResendVerification(false);
     try {
       const response = await fetch("/api/auth/student-login", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -49,13 +50,13 @@ export default function Login() {
       });
       if (sessionError) throw sessionError;
       router.push("/student/dashboard"); router.refresh();
-    } catch (e) { setError(e instanceof Error ? e.message : "Sign-in failed. Please try again."); }
+    } catch (e) { const message = e instanceof Error ? e.message : "Sign-in failed. Please try again."; setError(message); setShowResendVerification(/verify your registered email|email first|email not confirmed/i.test(message)); }
     finally { setBusy(false); }
   }
 
   async function requestOtp() {
     if (cooldown > 0 || !validIdentifiers()) return;
-    setBusy(true); setError(""); setNotice("");
+    setBusy(true); setError(""); setNotice(""); setShowResendVerification(false);
     try {
       const response = await fetch("/api/auth/student-otp", {
         method: "POST", headers: { "Content-Type": "application/json" },
@@ -65,7 +66,7 @@ export default function Login() {
       if (!response.ok) throw new Error(result.error || "OTP could not be sent.");
       setOtpEmail(result.email); setMaskedEmail(result.maskedEmail || "your registered email");
       setCooldown(60); setNotice("OTP sent to " + (result.maskedEmail || "your registered email") + ". Check your inbox.");
-    } catch (e) { setError(e instanceof Error ? e.message : "OTP could not be sent."); }
+    } catch (e) { setError(e instanceof Error ? e.message : "OTP could not be sent."); setShowResendVerification(true); }
     finally { setBusy(false); }
   }
 
@@ -88,6 +89,22 @@ export default function Login() {
       router.push("/student/dashboard"); router.refresh();
     } catch (e) { setError(e instanceof Error ? e.message : "OTP verification failed. Try again."); }
     finally { setBusy(false); }
+  }
+
+  async function requestVerificationEmail() {
+    if (!validIdentifiers()) return;
+    setBusy(true); setError(""); setNotice(""); setShowResendVerification(false);
+    try {
+      const response = await fetch("/api/auth/student-resend-verification", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rollNumber: rollNumber.trim(), registrationNumber: registrationNumber.trim() }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Verification email could not be requested.");
+      setNotice(result.message || "Check your email inbox and spam folder for the latest verification link.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Verification email could not be requested.");
+    } finally { setBusy(false); }
   }
 
   async function requestPasswordReset() {
@@ -117,7 +134,7 @@ export default function Login() {
         {mode==="password" ? <form onSubmit={submitPassword}><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" placeholder="Enter your password" required maxLength={128}/></label><button className="auth-submit" disabled={busy}>{busy?"Signing in…":"Sign in to student portal"} <span>→</span></button><button type="button" className="auth-text-action" onClick={()=>void requestPasswordReset()} disabled={busy}>Forgot password? Send reset link</button></form> :
         <form onSubmit={verifyOtp}>{otpEmail ? <><p className="auth-subtitle">Enter the 6-digit OTP sent to {maskedEmail}.</p><label>Email OTP<input type="text" inputMode="numeric" value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,"").slice(0,6))} pattern="[0-9]{6}" minLength={6} maxLength={6} required placeholder="6-digit OTP"/></label><button className="auth-submit" disabled={busy}>{busy?"Verifying…":"Verify OTP & sign in"} <span>→</span></button><button type="button" className="auth-text-action" disabled={busy||cooldown>0} onClick={()=>void requestOtp()}>{cooldown>0 ? "Resend OTP in " + cooldown + "s" : "Resend OTP"}</button></> : <button type="button" className="auth-submit" disabled={busy||cooldown>0} onClick={()=>void requestOtp()}>{busy?"Sending OTP…":cooldown>0 ? "Resend available in " + cooldown + "s" : "Send OTP to registered email"} <span>→</span></button>}</form>}
       </div>
-      {error&&<p className="auth-alert auth-error" role="alert">{error}</p>}{notice&&<p className="auth-alert" role="status">{notice}</p>}
+      {error&&<p className="auth-alert auth-error" role="alert">{error}</p>}{notice&&<p className="auth-alert" role="status">{notice}</p>}{showResendVerification&&<button type="button" className="auth-text-action" onClick={()=>void requestVerificationEmail()} disabled={busy}>Resend email verification link</button>}
       <div className="auth-switch">New student? <Link href="/register">Create an account</Link><br/><Link href="/auth">← Back to login options</Link></div><footer className="auth-footer">© 2026 SHIVORIX · All rights reserved</footer>
     </div>
   </section></main>;
