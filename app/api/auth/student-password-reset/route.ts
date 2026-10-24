@@ -22,7 +22,7 @@ export async function POST(request: Request) {
     if (profile?.email) {
       const auth = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
       const origin = process.env.NEXT_PUBLIC_SITE_URL || "https://shivorix-internship-portal-omega.vercel.app";
-      const { error: resetError } = await auth.auth.resetPasswordForEmail(profile.email, { redirectTo: `${origin}/reset-password` });
+      const { error: resetError } = await auth.auth.resetPasswordForEmail(profile.email, { redirectTo: `${origin}/auth/callback?next=%2Freset-password` });
       if (resetError) {
         console.error("Student password reset request failed:", resetError.message);
         return NextResponse.json({ error: "Password reset email could not be sent. Check the portal email configuration." }, { status: 503 });
