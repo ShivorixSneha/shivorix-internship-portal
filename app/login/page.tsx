@@ -97,7 +97,7 @@ export default function Login() {
     if (!registeredEmail.trim() || !/^\S+@\S+\.\S+$/.test(registeredEmail.trim())) { setError("Enter the email address you used during registration."); return; }
     setBusy(true); setError(""); setNotice("");
     try {
-      const { error: resetError } = await getSupabaseBrowserClient().auth.resetPasswordForEmail(registeredEmail.trim().toLowerCase(), { redirectTo: window.location.origin + "/auth/callback?next=/reset-password" });
+      const { error: resetError } = await getSupabaseBrowserClient().auth.resetPasswordForEmail(registeredEmail.trim().toLowerCase(), { redirectTo: window.location.origin + "/auth/callback?next=%2Freset-password" });
       if (resetError) throw resetError;
       setNotice("If an account exists for this email, a password reset link has been requested. Check Inbox and Spam.");
     } catch (e) { setError(e instanceof Error ? e.message : "Password reset could not be started."); } finally { setBusy(false); }
