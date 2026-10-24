@@ -59,7 +59,7 @@ export default function Login() {
       const { error: otpError } = await getSupabaseBrowserClient().auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
       if (otpError) throw otpError;
       setOtpEmail(email); setMaskedEmail(email.replace(/^(.{2}).*(@.*)$/, "$1***$2")); setCooldown(60);
-      setNotice("OTP request submitted. Check your Inbox and Spam folders.");
+      setNotice("If your email is awaiting confirmation, Supabase will send a verification code. Otherwise, it will send your sign-in OTP. Use the newest 6-digit code.");
     } catch (e) { setError(e instanceof Error ? e.message : "OTP could not be sent."); setShowResendVerification(true); } finally { setBusy(false); }
   }
 
@@ -69,13 +69,18 @@ export default function Login() {
     setBusy(true); setError(""); setNotice("");
     try {
       const supabase = getSupabaseBrowserClient();
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({ email: otpEmail, token: otp.trim(), type: "email" });
+      // Existing confirmed users receive an email OTP; unconfirmed users receive a signup confirmation token.
+      let result = await supabase.auth.verifyOtp({ email: otpEmail, token: otp.trim(), type: "email" });
+      if (result.error) {
+        result = await supabase.auth.verifyOtp({ email: otpEmail, token: otp.trim(), type: "signup" });
+      }
+      const { data, error: verifyError } = result;
       if (verifyError || !data.session || !data.user) throw verifyError || new Error("OTP verification did not create a session.");
       const { data: profile, error: profileError } = await supabase.from("profiles").select("role,roll_number,registration_number").eq("id", data.user.id).maybeSingle();
       const meta = data.user.user_metadata || {};
       if (profileError || (profile?.role || meta.role) !== "student" || String(profile?.roll_number || meta.roll_number || "").trim() !== rollNumber.trim() || String(profile?.registration_number || meta.registration_number || "").trim() !== registrationNumber.trim()) { await supabase.auth.signOut(); throw new Error("These Roll Number and Registration Number do not match this email account."); }
       router.push("/student/dashboard"); router.refresh();
-    } catch (e) { setError(e instanceof Error ? e.message : "OTP verification failed. Try again."); } finally { setBusy(false); }
+    } catch (e) { setError(e instanceof Error ? e.message : "OTP verification failed. Request a fresh code and try again."); } finally { setBusy(false); }
   }
 
   async function requestVerificationEmail() {
@@ -84,7 +89,7 @@ export default function Login() {
     try {
       const { error: resendError } = await getSupabaseBrowserClient().auth.resend({ type: "signup", email: registeredEmail.trim().toLowerCase(), options: { emailRedirectTo: window.location.origin + "/auth/callback" } });
       if (resendError) throw resendError;
-      setNotice("If this email has a pending registration, a fresh verification link has been requested. Check Inbox and Spam, and open the newest email.");
+      setNotice("A fresh verification email was requested if this account is awaiting confirmation. Use the newest email only.");
     } catch (e) { setError(e instanceof Error ? e.message : "Verification email could not be requested."); } finally { setBusy(false); }
   }
 
@@ -110,7 +115,7 @@ export default function Login() {
         {mode==="password" ? <form onSubmit={submitPassword}><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" placeholder="Enter your password" required maxLength={128}/></label><button className="auth-submit" disabled={busy}>{busy?"Signing in…":"Sign in to student portal"} <span>→</span></button><button type="button" className="auth-text-action" onClick={()=>void requestPasswordReset()} disabled={busy}>Forgot password? Send reset link</button></form> :
         <form onSubmit={verifyOtp}>{otpEmail ? <><p className="auth-subtitle">Enter the 6-digit OTP sent to {maskedEmail}.</p><label>Email OTP<input type="text" inputMode="numeric" value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,"").slice(0,6))} pattern="[0-9]{6}" minLength={6} maxLength={6} required placeholder="6-digit OTP"/></label><button className="auth-submit" disabled={busy}>{busy?"Verifying…":"Verify OTP & sign in"} <span>→</span></button><button type="button" className="auth-text-action" disabled={busy||cooldown>0} onClick={()=>void requestOtp()}>{cooldown>0 ? "Resend OTP in " + cooldown + "s" : "Resend OTP"}</button></> : <button type="button" className="auth-submit" disabled={busy||cooldown>0} onClick={()=>void requestOtp()}>{busy?"Sending OTP…":cooldown>0 ? "Resend available in " + cooldown + "s" : "Send OTP to registered email"} <span>→</span></button>}</form>}
       </div>
-      {error&&<p className="auth-alert auth-error" role="alert">{error}</p>}{notice&&<p className="auth-alert" role="status">{notice}</p>}{showResendVerification&&<button type="button" className="auth-text-action" onClick={()=>void requestVerificationEmail()} disabled={busy}>Resend email verification link</button>}
+      {error&&<p className="auth-alert auth-error" role="alert">{error}</p>}{notice&&<p className="auth-alert" role="status">{notice}</p>}{showResendVerification&&<button type="button" className="auth-text-action" onClick={()=>void requestVerificationEmail()} disabled={busy}>Resend email verification</button>}
       <div className="auth-switch">New student? <Link href="/register">Create an account</Link><br/><Link href="/auth">← Back to login options</Link></div><footer className="auth-footer">© 2026 SHIVORIX · All rights reserved</footer>
     </div>
   </section></main>;
