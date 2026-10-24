@@ -24,6 +24,7 @@ export default function AuthCallbackPage() {
         const otpType = url.searchParams.get("type");
         const next = url.searchParams.get("next");
         const isRecovery = otpType === "recovery" || next === "/reset-password";
+        const isEmailSignIn = otpType === "magiclink" || otpType === "email";
 
         if (url.searchParams.has("error") || url.searchParams.has("error_description")) {
           const detail = url.searchParams.get("error_description") || url.searchParams.get("error");
@@ -46,6 +47,11 @@ export default function AuthCallbackPage() {
 
         if (isRecovery) {
           window.location.replace("/reset-password");
+          return;
+        }
+
+        if (isEmailSignIn) {
+          window.location.replace("/student/dashboard");
           return;
         }
 
