@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       const dueDate = typeof body.dueDate === "string" && body.dueDate ? body.dueDate : null;
       const resourceUrl = typeof body.resourceUrl === "string" && body.resourceUrl.trim() ? body.resourceUrl.trim().slice(0, 2048) : null;
       const status = recordType === "notification" ? "published" : "open";
-      if (!["assignment", "evaluation", "document", "notification", "training", "activity", "test", "certificate"].includes(recordType) || title.length < 2 || title.length > 180) {
+      if (!["assignment", "project", "evaluation", "document", "notification", "training", "activity", "test", "certificate"].includes(recordType) || title.length < 2 || title.length > 180) {
         return NextResponse.json({ error: "Choose a record type and enter a title between 2 and 180 characters." }, { status: 400 });
       }
       if (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return NextResponse.json({ error: "Due date is invalid." }, { status: 400 });
