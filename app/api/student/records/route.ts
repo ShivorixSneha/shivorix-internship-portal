@@ -47,12 +47,12 @@ export async function GET(request: Request) {
       console.error("Student records query failed:", recordsResult.error?.message || attendanceResult.error?.message || applicationsResult.error?.message || submissionsResult.error?.message);
       return NextResponse.json({ error: "Student records could not be loaded." }, { status: 503 });
     }
-    const records = await Promise.all((recordsResult.data ?? []).map(async (record) => {
+    const records = await Promise.all((recordsResult.data ?? []).map(async (record: any) => {
       if (typeof record.resource_url !== "string" || !record.resource_url.startsWith("resources/")) return record;
       const { data } = await client.storage.from("student-documents").createSignedUrl(record.resource_url, 3600);
       return { ...record, resource_file_url: data?.signedUrl ?? null };
     }));
-    const submissions = await Promise.all((submissionsResult.data ?? []).map(async (submission) => {
+    const submissions = await Promise.all((submissionsResult.data ?? []).map(async (submission: any) => {
       if (typeof submission.submission_url !== "string" || !submission.submission_url.startsWith("submissions/")) return submission;
       const { data } = await client.storage.from("student-documents").createSignedUrl(submission.submission_url, 3600);
       return { ...submission, submission_url: data?.signedUrl ?? null };
