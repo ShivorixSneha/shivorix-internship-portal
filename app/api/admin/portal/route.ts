@@ -252,7 +252,7 @@ export async function PATCH(request: Request) {
       const resourceUrl = typeof body.resourceUrl === "string" ? body.resourceUrl.trim() : "";
       const status = typeof body.status === "string" ? body.status : "published";
       if (!recordId || title.length < 3 || title.length > 180 || description.length > 5000 || !["open", "in_progress", "submitted", "completed", "published"].includes(status)) return NextResponse.json({ error: "Check the record title and status." }, { status: 400 });
-      if (resourceUrl && !(resourceUrl.startsWith("http://") || resourceUrl.startsWith("https://"))) return NextResponse.json({ error: "Resource link must start with http:// or https://." }, { status: 400 });
+      if (resourceUrl && !(resourceUrl.startsWith("http://") || resourceUrl.startsWith("https://") || resourceUrl.startsWith("resources/"))) return NextResponse.json({ error: "Choose a valid external URL or an uploaded resource file." }, { status: 400 });
       const { data, error } = await client.from("nodal_portal_records").update({ title, description: description || null, due_date: dueDate, resource_url: resourceUrl || null, status }).eq("id", recordId).select("id").maybeSingle();
       if (error || !data) return NextResponse.json({ error: "Module item could not be updated." }, { status: 400 });
       const { error: auditInsertError } = await client.from("admin_audit_log").insert({ actor_id: user.id, action: "portal_record_updated", old_value: null, new_value: { title, status }, details: { record_id: recordId } });
