@@ -50,7 +50,7 @@ export async function GET(request: Request) {
     const records = await Promise.all((recordsResult.data ?? []).map(async (record) => {
       if (typeof record.resource_url !== "string" || !record.resource_url.startsWith("resources/")) return record;
       const { data } = await client.storage.from("student-documents").createSignedUrl(record.resource_url, 3600);
-      return { ...record, resource_url: data?.signedUrl ?? null };
+      return { ...record, resource_file_url: data?.signedUrl ?? null };
     }));
     const submissions = await Promise.all((submissionsResult.data ?? []).map(async (submission) => {
       if (typeof submission.submission_url !== "string" || !submission.submission_url.startsWith("submissions/")) return submission;
