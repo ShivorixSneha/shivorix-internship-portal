@@ -84,6 +84,7 @@ export default function Login() {
 
   async function verifyOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!otpEmail) { setError("Request an OTP first."); return; }
+    if (otpExpiresIn <= 0) { setOtp(""); setError("This OTP has expired. Request a new OTP; codes are valid for 3 minutes."); return; }
     if (!/^\d{6}$/.test(otp.trim())) { setError("Enter the 6-digit OTP from your email."); return; }
     setBusy(true); setError(""); setNotice("");
     try {
