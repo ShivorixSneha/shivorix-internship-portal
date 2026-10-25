@@ -44,7 +44,7 @@ export async function GET(request: Request) {
     const studentIds = (students ?? []).map((student) => student.id);
     const { data: applications, error: applicationsError } = studentIds.length
       ? await client.from("internship_applications")
-          .select("id,application_number,student_id,internship_id,college_id,sector_id,mode,requested_hours,requested_credits,preferred_start_date,preferred_end_date,state,city,pin_code,full_address,nodal_review_status,review_remarks,status,applied_at,updated_at,profiles(full_name,email),internships(title),sectors(name),portal_documents(id,document_type,status,metadata)")
+          .select("id,application_number,student_id,internship_id,college_id,sector_id,mode,requested_hours,requested_credits,preferred_start_date,preferred_end_date,state,city,pin_code,full_address,nodal_review_status,review_remarks,status,applied_at,updated_at,profiles!internship_applications_student_id_fkey(full_name,email),internships(title),sectors(name),portal_documents(id,document_type,status,metadata)")
           .in("student_id", studentIds).order("applied_at", { ascending: false }).limit(500)
       : { data: [], error: null };
     if (applicationsError) throw applicationsError;
