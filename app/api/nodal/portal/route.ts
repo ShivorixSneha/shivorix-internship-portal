@@ -71,12 +71,12 @@ export async function GET(request: Request) {
       : { data: [], error: null };
     if (submissionsError) throw submissionsError;
 
-    const signedRecords = await Promise.all((records ?? []).map(async (record) => {
+    const signedRecords = await Promise.all((records ?? []).map(async (record: any) => {
       if (typeof record.resource_url !== "string" || !record.resource_url.startsWith("resources/")) return { ...record, resource_file_url: null };
       const { data } = await client.storage.from("student-documents").createSignedUrl(record.resource_url, 3600);
       return { ...record, resource_file_url: data?.signedUrl ?? null };
     }));
-    const signedSubmissions = await Promise.all((submissions ?? []).map(async (submission) => {
+    const signedSubmissions = await Promise.all((submissions ?? []).map(async (submission: any) => {
       if (typeof submission.submission_url !== "string" || !submission.submission_url.startsWith("submissions/")) return submission;
       const { data } = await client.storage.from("student-documents").createSignedUrl(submission.submission_url, 3600);
       return { ...submission, submission_url: data?.signedUrl ?? null };
