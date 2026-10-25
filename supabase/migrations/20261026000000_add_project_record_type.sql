@@ -1,0 +1,2 @@
+ALTER TABLE public.nodal_portal_records DROP CONSTRAINT IF EXISTS nodal_portal_records_record_type_check;
+ALTER TABLE public.nodal_portal_records ADD CONSTRAINT nodal_portal_records_record_type_check CHECK (record_type = ANY (ARRAY['assignment'::text, 'project'::text, 'evaluation'::text, 'document'::text, 'notification'::text, 'training'::text, 'activity'::text, 'test'::text, 'certificate'::text]));
