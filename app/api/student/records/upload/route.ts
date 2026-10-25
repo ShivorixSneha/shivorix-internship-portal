@@ -42,7 +42,7 @@ export async function POST(request: Request) {
       .select("id,institution_id,student_id,record_type").eq("id", recordId).maybeSingle();
     if (recordError || !record || record.institution_id !== profile.college_id ||
         (record.student_id && record.student_id !== authData.user.id) ||
-        !["assignment", "activity", "test", "evaluation"].includes(record.record_type)) {
+        !["assignment", "project", "activity", "test", "evaluation"].includes(record.record_type)) {
       return NextResponse.json({ error: "This task is not available for file submission from your account." }, { status: 403 });
     }
 
