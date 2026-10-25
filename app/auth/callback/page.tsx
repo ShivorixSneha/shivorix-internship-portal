@@ -15,13 +15,21 @@ export default function AuthCallbackPage() {
 
   useEffect(() => {
     let active = true;
-    async function confirmEmail() {
+    async function handleAuthCallback() {
       try {
         const supabase = getSupabaseBrowserClient();
         const url = new URL(window.location.href);
         const code = url.searchParams.get("code");
         const tokenHash = url.searchParams.get("token_hash");
         const otpType = url.searchParams.get("type");
+        const next = url.searchParams.get("next");
+        const isRecovery = otpType === "recovery" || next === "/reset-password";
+        const isEmailSignIn = otpType === "magiclink" || otpType === "email";
+
+        if (url.searchParams.has("error") || url.searchParams.has("error_description")) {
+          const detail = url.searchParams.get("error_description") || url.searchParams.get("error");
+          throw new Error(detail ? decodeURIComponent(detail.replace(/\\+/g, " ")) : "This authentication link is invalid or expired. Request a new email and open its latest link.");
+        }
 
         if (code) {
           const { error } = await supabase.auth.exchangeCodeForSession(code);
@@ -33,9 +41,18 @@ export default function AuthCallbackPage() {
 
         const { data, error } = await supabase.auth.getSession();
         if (error) throw error;
-        if (!data.session && !code && !(tokenHash && otpType)) {
-          const detail = url.searchParams.get("error_description");
-          throw new Error(detail ? decodeURIComponent(detail.replace(/\+/g, " ")) : "The verification link may have expired or already been used. Request a new verification email and open its latest link.");
+        if (!data.session) {
+          throw new Error("This authentication link is invalid or expired. Request a fresh email and open the newest link.");
+        }
+
+        if (isRecovery) {
+          window.location.replace("/reset-password");
+          return;
+        }
+
+        if (isEmailSignIn) {
+          window.location.replace("/student/dashboard");
+          return;
         }
 
         if (active) {
@@ -45,11 +62,11 @@ export default function AuthCallbackPage() {
       } catch (error) {
         if (active) {
           setStatus("error");
-          setMessage(error instanceof Error ? error.message : "Email verification failed. Request a fresh verification email and try again.");
+          setMessage(error instanceof Error ? error.message : "Authentication failed. Request a fresh email and try again.");
         }
       }
     }
-    void confirmEmail();
+    void handleAuthCallback();
     return () => { active = false; };
   }, []);
 

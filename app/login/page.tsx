@@ -19,6 +19,7 @@ export default function Login() {
   const [mode, setMode] = useState<"password" | "otp">("password");
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [otpExpiresIn, setOtpExpiresIn] = useState(0);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [showResendVerification, setShowResendVerification] = useState(false);
@@ -28,6 +29,12 @@ export default function Login() {
     const timer = window.setTimeout(() => setCooldown(value => Math.max(0, value - 1)), 1000);
     return () => window.clearTimeout(timer);
   }, [cooldown]);
+
+  useEffect(() => {
+    if (otpExpiresIn <= 0) return;
+    const timer = window.setTimeout(() => setOtpExpiresIn(value => Math.max(0, value - 1)), 1000);
+    return () => window.clearTimeout(timer);
+  }, [otpExpiresIn]);
 
   function validIdentifiers() {
     if (!/^\d{12}$/.test(rollNumber.trim())) { setError("Roll number must contain exactly 12 digits."); return false; }
@@ -55,16 +62,29 @@ export default function Login() {
     if (!registeredEmail.trim()) { setError("Enter the email address you used during registration."); return; }
     setBusy(true); setError(""); setNotice(""); setShowResendVerification(false);
     try {
+      const response = await fetch("/api/auth/student-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rollNumber: rollNumber.trim(), registrationNumber: registrationNumber.trim() })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "OTP could not be sent.");
       const email = registeredEmail.trim().toLowerCase();
-      const { error: otpError } = await getSupabaseBrowserClient().auth.signInWithOtp({ email, options: { shouldCreateUser: false } });
-      if (otpError) throw otpError;
-      setOtpEmail(email); setMaskedEmail(email.replace(/^(.{2}).*(@.*)$/, "$1***$2")); setCooldown(60);
-      setNotice("If your email is awaiting confirmation, Supabase will send a verification code. Otherwise, it will send your sign-in OTP. Use the newest 6-digit code.");
+      if (result.email && result.email.toLowerCase() !== email) {
+        throw new Error("The email address does not match the email registered to these student numbers.");
+      }
+      setOtp("");
+      setOtpEmail(email);
+      setMaskedEmail(result.maskedEmail || email.replace(/^(.{2}).*(@.*)$/, "$1***$2"));
+      setCooldown(60);
+      setOtpExpiresIn(180);
+      setNotice("A new 6-digit OTP was sent. It expires in 3 minutes; use only the latest code.");
     } catch (e) { setError(e instanceof Error ? e.message : "OTP could not be sent."); setShowResendVerification(true); } finally { setBusy(false); }
   }
 
   async function verifyOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!otpEmail) { setError("Request an OTP first."); return; }
+    if (otpExpiresIn <= 0) { setOtp(""); setError("This OTP has expired. Request a new OTP; codes are valid for 3 minutes."); return; }
     if (!/^\d{6}$/.test(otp.trim())) { setError("Enter the 6-digit OTP from your email."); return; }
     setBusy(true); setError(""); setNotice("");
     try {
@@ -97,7 +117,7 @@ export default function Login() {
     if (!registeredEmail.trim() || !/^\S+@\S+\.\S+$/.test(registeredEmail.trim())) { setError("Enter the email address you used during registration."); return; }
     setBusy(true); setError(""); setNotice("");
     try {
-      const { error: resetError } = await getSupabaseBrowserClient().auth.resetPasswordForEmail(registeredEmail.trim().toLowerCase(), { redirectTo: window.location.origin + "/auth/callback?next=/reset-password" });
+      const { error: resetError } = await getSupabaseBrowserClient().auth.resetPasswordForEmail(registeredEmail.trim().toLowerCase(), { redirectTo: window.location.origin + "/auth/callback?next=%2Freset-password" });
       if (resetError) throw resetError;
       setNotice("If an account exists for this email, a password reset link has been requested. Check Inbox and Spam.");
     } catch (e) { setError(e instanceof Error ? e.message : "Password reset could not be started."); } finally { setBusy(false); }
@@ -113,7 +133,7 @@ export default function Login() {
         <label>Roll number<input type="text" inputMode="numeric" value={rollNumber} onChange={e=>setRollNumber(e.target.value.replace(/\D/g,"").slice(0,12))} autoComplete="username" placeholder="12-digit roll number" pattern="[0-9]{12}" minLength={12} maxLength={12} title="Enter exactly 12 digits." required/></label>
         <label>Registration number<input type="text" inputMode="numeric" value={registrationNumber} onChange={e=>setRegistrationNumber(e.target.value.replace(/\D/g,"").slice(0,15))} placeholder="15-digit registration number" pattern="[0-9]{15}" minLength={15} maxLength={15} title="Enter exactly 15 digits." required/></label>
         {mode==="password" ? <form onSubmit={submitPassword}><label>Password<input type="password" value={password} onChange={e=>setPassword(e.target.value)} autoComplete="current-password" placeholder="Enter your password" required maxLength={128}/></label><button className="auth-submit" disabled={busy}>{busy?"Signing in…":"Sign in to student portal"} <span>→</span></button><button type="button" className="auth-text-action" onClick={()=>void requestPasswordReset()} disabled={busy}>Forgot password? Send reset link</button></form> :
-        <form onSubmit={verifyOtp}>{otpEmail ? <><p className="auth-subtitle">Enter the 6-digit OTP sent to {maskedEmail}.</p><label>Email OTP<input type="text" inputMode="numeric" value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,"").slice(0,6))} pattern="[0-9]{6}" minLength={6} maxLength={6} required placeholder="6-digit OTP"/></label><button className="auth-submit" disabled={busy}>{busy?"Verifying…":"Verify OTP & sign in"} <span>→</span></button><button type="button" className="auth-text-action" disabled={busy||cooldown>0} onClick={()=>void requestOtp()}>{cooldown>0 ? "Resend OTP in " + cooldown + "s" : "Resend OTP"}</button></> : <button type="button" className="auth-submit" disabled={busy||cooldown>0} onClick={()=>void requestOtp()}>{busy?"Sending OTP…":cooldown>0 ? "Resend available in " + cooldown + "s" : "Send OTP to registered email"} <span>→</span></button>}</form>}
+        <form onSubmit={verifyOtp}>{otpEmail ? <><p className="auth-subtitle">Enter the 6-digit OTP sent to {maskedEmail}. Valid for 3 minutes ({Math.floor(otpExpiresIn / 60)}:{String(otpExpiresIn % 60).padStart(2, "0")} remaining).</p><label>Email OTP<input type="text" inputMode="numeric" value={otp} onChange={e=>setOtp(e.target.value.replace(/\D/g,"").slice(0,6))} pattern="[0-9]{6}" minLength={6} maxLength={6} required placeholder="6-digit OTP"/></label><button className="auth-submit" disabled={busy || otpExpiresIn <= 0}>{busy?"Verifying…":otpExpiresIn <= 0 ? "OTP expired — request a new one" : "Verify OTP & sign in"} <span>→</span></button><button type="button" className="auth-text-action" disabled={busy||cooldown>0} onClick={()=>void requestOtp()}>{cooldown>0 ? "Resend OTP in " + cooldown + "s" : "Resend OTP"}</button></> : <button type="button" className="auth-submit" disabled={busy||cooldown>0} onClick={()=>void requestOtp()}>{busy?"Sending OTP…":cooldown>0 ? "Resend available in " + cooldown + "s" : "Send OTP to registered email"} <span>→</span></button>}</form>}
       </div>
       {error&&<p className="auth-alert auth-error" role="alert">{error}</p>}{notice&&<p className="auth-alert" role="status">{notice}</p>}{showResendVerification&&<button type="button" className="auth-text-action" onClick={()=>void requestVerificationEmail()} disabled={busy}>Resend email verification</button>}
       <div className="auth-switch">New student? <Link href="/register">Create an account</Link><br/><Link href="/auth">← Back to login options</Link></div><footer className="auth-footer">© 2026 SHIVORIX · All rights reserved</footer>
