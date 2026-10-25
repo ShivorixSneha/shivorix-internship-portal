@@ -73,7 +73,7 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false }).limit(200);
     if (auditError) console.error("Admin audit log query failed:", auditError.message);
     return NextResponse.json({
-      records: await Promise.all((portalRecords ?? []).map(async (record) => {
+      records: await Promise.all((portalRecords ?? []).map(async (record: any) => {
         if (typeof record.resource_url !== "string" || !record.resource_url.startsWith("resources/")) return { ...record, resource_file_url: null };
         const { data } = await client.storage.from("student-documents").createSignedUrl(record.resource_url, 3600);
         return { ...record, resource_file_url: data?.signedUrl ?? null };
