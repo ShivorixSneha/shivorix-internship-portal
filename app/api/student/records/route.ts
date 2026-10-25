@@ -95,10 +95,10 @@ export async function POST(request: Request) {
       .select("id,institution_id,student_id,record_type").eq("id", recordId).maybeSingle();
     if (recordError || !record || !profile.college_id || record.institution_id !== profile.college_id ||
         (record.student_id && record.student_id !== authData.user.id) ||
-        !["assignment","activity","test","evaluation"].includes(record.record_type)) {
+        !["assignment","project","activity","test","evaluation"].includes(record.record_type)) {
       return NextResponse.json({ error: "This record is not available for submission from your account." }, { status: 403 });
     }
-    if (record.record_type === "assignment") {
+    if (record.record_type === "assignment" || record.record_type === "project") {
       if (!submissionUrl && !submissionNote) return NextResponse.json({ error: "Attach a file, add an optional link, or write your assignment answer." }, { status: 400 });
       const { data: activeApplications, error: activeError } = await client.from("internship_applications")
         .select("id").eq("student_id", authData.user.id).not("activated_at", "is", null).limit(1);
