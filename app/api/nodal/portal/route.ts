@@ -71,6 +71,12 @@ export async function GET(request: Request) {
       : { data: [], error: null };
     if (submissionsError) throw submissionsError;
 
+    const signedSubmissions = await Promise.all((submissions ?? []).map(async (submission) => {
+      if (typeof submission.submission_url !== "string" || !submission.submission_url.startsWith("submissions/")) return submission;
+      const { data } = await client.storage.from("student-documents").createSignedUrl(submission.submission_url, 3600);
+      return { ...submission, submission_url: data?.signedUrl ?? null };
+    }));
+
     return NextResponse.json({
       profile: { full_name: auth.profile.full_name, email: auth.profile.email },
       institutions: institutions ?? [],
@@ -78,7 +84,7 @@ export async function GET(request: Request) {
       applications: applications ?? [],
       attendance: attendance ?? [],
       records: records ?? [],
-      submissions: submissions ?? [],
+      submissions: signedSubmissions,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Nodal portal GET failed:", error);
