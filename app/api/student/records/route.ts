@@ -104,10 +104,12 @@ export async function POST(request: Request) {
         .select("id").eq("student_id", authData.user.id).not("activated_at", "is", null).limit(1);
       if (activeError) throw activeError;
       if (!activeApplications?.length) return NextResponse.json({ error: "An active internship is required before submitting assignments or project reports." }, { status: 409 });
-      const { data: existingSubmission, error: existingError } = await client.from("nodal_record_submissions")
-        .select("id").eq("record_id", recordId).eq("student_id", authData.user.id).maybeSingle();
-      if (existingError) throw existingError;
-      if (existingSubmission) return NextResponse.json({ error: "This assignment has already been submitted. Editing and resubmission are not available." }, { status: 409 });
+      if (record.record_type === "assignment") {
+        const { data: existingSubmission, error: existingError } = await client.from("nodal_record_submissions")
+          .select("id").eq("record_id", recordId).eq("student_id", authData.user.id).maybeSingle();
+        if (existingError) throw existingError;
+        if (existingSubmission) return NextResponse.json({ error: "This assignment has already been submitted. Editing and resubmission are not available." }, { status: 409 });
+      }
     }
     const submissionPayload = {
       record_id: recordId, student_id: authData.user.id, submission_url: submissionUrl || null,
