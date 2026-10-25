@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     if (body.action === "create_record") {
       const recordType = typeof body.recordType === "string" ? body.recordType : "";
-      if (["training", "evaluation", "document", "activity", "test", "certificate"].includes(recordType)) return NextResponse.json({ error: "Only Admin can create or publish this resource." }, { status: 403 });
+      if (["assignment", "project", "training", "evaluation", "document", "activity", "test", "certificate"].includes(recordType)) return NextResponse.json({ error: "Only Admin can create or publish this resource." }, { status: 403 });
       const title = typeof body.title === "string" ? body.title.trim() : "";
       const description = typeof body.description === "string" ? body.description.trim().slice(0, 5000) : "";
       const studentId = typeof body.studentId === "string" && body.studentId ? body.studentId : null;
