@@ -71,14 +71,25 @@ export async function GET(request: Request) {
       : { data: [], error: null };
     if (submissionsError) throw submissionsError;
 
+    const signedRecords = await Promise.all((records ?? []).map(async (record: any) => {
+      if (typeof record.resource_url !== "string" || !record.resource_url.startsWith("resources/")) return { ...record, resource_file_url: null };
+      const { data } = await client.storage.from("student-documents").createSignedUrl(record.resource_url, 3600);
+      return { ...record, resource_file_url: data?.signedUrl ?? null };
+    }));
+    const signedSubmissions = await Promise.all((submissions ?? []).map(async (submission: any) => {
+      if (typeof submission.submission_url !== "string" || !submission.submission_url.startsWith("submissions/")) return submission;
+      const { data } = await client.storage.from("student-documents").createSignedUrl(submission.submission_url, 3600);
+      return { ...submission, submission_url: data?.signedUrl ?? null };
+    }));
+
     return NextResponse.json({
       profile: { full_name: auth.profile.full_name, email: auth.profile.email },
       institutions: institutions ?? [],
       students: students ?? [],
       applications: applications ?? [],
       attendance: attendance ?? [],
-      records: records ?? [],
-      submissions: submissions ?? [],
+      records: signedRecords,
+      submissions: signedSubmissions,
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Nodal portal GET failed:", error);
@@ -94,14 +105,14 @@ export async function POST(request: Request) {
     const body = await request.json();
     if (body.action === "create_record") {
       const recordType = typeof body.recordType === "string" ? body.recordType : "";
-      if (["training", "evaluation", "document", "activity", "test", "certificate"].includes(recordType)) return NextResponse.json({ error: "Only Admin can create or publish this resource." }, { status: 403 });
+      if (["assignment", "project", "training", "evaluation", "document", "activity", "test", "certificate"].includes(recordType)) return NextResponse.json({ error: "Only Admin can create or publish this resource." }, { status: 403 });
       const title = typeof body.title === "string" ? body.title.trim() : "";
       const description = typeof body.description === "string" ? body.description.trim().slice(0, 5000) : "";
       const studentId = typeof body.studentId === "string" && body.studentId ? body.studentId : null;
       const dueDate = typeof body.dueDate === "string" && body.dueDate ? body.dueDate : null;
       const resourceUrl = typeof body.resourceUrl === "string" && body.resourceUrl.trim() ? body.resourceUrl.trim().slice(0, 2048) : null;
       const status = recordType === "notification" ? "published" : "open";
-      if (!["assignment", "evaluation", "document", "notification", "training", "activity", "test", "certificate"].includes(recordType) || title.length < 2 || title.length > 180) {
+      if (!["assignment", "project", "evaluation", "document", "notification", "training", "activity", "test", "certificate"].includes(recordType) || title.length < 2 || title.length > 180) {
         return NextResponse.json({ error: "Choose a record type and enter a title between 2 and 180 characters." }, { status: 400 });
       }
       if (dueDate && !/^\d{4}-\d{2}-\d{2}$/.test(dueDate)) return NextResponse.json({ error: "Due date is invalid." }, { status: 400 });

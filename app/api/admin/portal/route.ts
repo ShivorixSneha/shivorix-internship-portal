@@ -73,7 +73,11 @@ export async function GET(request: Request) {
       .order("created_at", { ascending: false }).limit(200);
     if (auditError) console.error("Admin audit log query failed:", auditError.message);
     return NextResponse.json({
-      records: portalRecords ?? [],
+      records: await Promise.all((portalRecords ?? []).map(async (record: any) => {
+        if (typeof record.resource_url !== "string" || !record.resource_url.startsWith("resources/")) return { ...record, resource_file_url: null };
+        const { data } = await client.storage.from("student-documents").createSignedUrl(record.resource_url, 3600);
+        return { ...record, resource_file_url: data?.signedUrl ?? null };
+      })),
       auditLogs: auditLogs ?? [],
       profiles: (profiles.data ?? []).map((profile) => ({ ...profile, mobile_number: mobileByUserId.get(profile.id) ?? null })),
       colleges: colleges.data ?? [],
@@ -168,11 +172,11 @@ export async function POST(request: Request) {
       const institutionId = typeof body.institutionId === "string" ? body.institutionId : "";
       const dueDate = typeof body.dueDate === "string" && body.dueDate ? body.dueDate : null;
       const resourceUrl = typeof body.resourceUrl === "string" ? body.resourceUrl.trim() : "";
-      const allowedTypes = ["assignment", "evaluation", "document", "notification", "training", "activity", "test", "certificate"];
+      const allowedTypes = ["assignment", "project", "evaluation", "document", "notification", "training", "activity", "test", "certificate"];
       if (!allowedTypes.includes(type) || title.length < 3 || title.length > 180 || description.length > 5000 || !institutionId) {
         return NextResponse.json({ error: "Choose a supported module, college, and valid title/description." }, { status: 400 });
       }
-      if (resourceUrl && !(resourceUrl.startsWith("http://") || resourceUrl.startsWith("https://"))) return NextResponse.json({ error: "Resource link must start with http:// or https://." }, { status: 400 });
+      if (resourceUrl && !(resourceUrl.startsWith("http://") || resourceUrl.startsWith("https://") || resourceUrl.startsWith("resources/"))) return NextResponse.json({ error: "Choose a valid external URL or an uploaded resource file." }, { status: 400 });
       if (institutionId) {
         const { data: college, error: collegeError } = await client.from("colleges").select("id").eq("id", institutionId).maybeSingle();
         if (collegeError || !college) return NextResponse.json({ error: "Choose a valid college." }, { status: 400 });
@@ -248,7 +252,7 @@ export async function PATCH(request: Request) {
       const resourceUrl = typeof body.resourceUrl === "string" ? body.resourceUrl.trim() : "";
       const status = typeof body.status === "string" ? body.status : "published";
       if (!recordId || title.length < 3 || title.length > 180 || description.length > 5000 || !["open", "in_progress", "submitted", "completed", "published"].includes(status)) return NextResponse.json({ error: "Check the record title and status." }, { status: 400 });
-      if (resourceUrl && !(resourceUrl.startsWith("http://") || resourceUrl.startsWith("https://"))) return NextResponse.json({ error: "Resource link must start with http:// or https://." }, { status: 400 });
+      if (resourceUrl && !(resourceUrl.startsWith("http://") || resourceUrl.startsWith("https://") || resourceUrl.startsWith("resources/"))) return NextResponse.json({ error: "Choose a valid external URL or an uploaded resource file." }, { status: 400 });
       const { data, error } = await client.from("nodal_portal_records").update({ title, description: description || null, due_date: dueDate, resource_url: resourceUrl || null, status }).eq("id", recordId).select("id").maybeSingle();
       if (error || !data) return NextResponse.json({ error: "Module item could not be updated." }, { status: 400 });
       const { error: auditInsertError } = await client.from("admin_audit_log").insert({ actor_id: user.id, action: "portal_record_updated", old_value: null, new_value: { title, status }, details: { record_id: recordId } });
