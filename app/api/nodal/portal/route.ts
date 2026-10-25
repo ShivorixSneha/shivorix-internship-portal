@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     if (body.action === "create_record") {
       const recordType = typeof body.recordType === "string" ? body.recordType : "";
-      if (recordType === "training") return NextResponse.json({ error: "Only Admin can create or publish training resources." }, { status: 403 });
+      if (["training", "evaluation", "document", "activity", "test", "certificate"].includes(recordType)) return NextResponse.json({ error: "Only Admin can create or publish this resource." }, { status: 403 });
       const title = typeof body.title === "string" ? body.title.trim() : "";
       const description = typeof body.description === "string" ? body.description.trim().slice(0, 5000) : "";
       const studentId = typeof body.studentId === "string" && body.studentId ? body.studentId : null;
@@ -234,7 +234,7 @@ export async function PATCH(request: Request) {
         .select("id,record_type").eq("id", recordId).in("institution_id", institutionIds).maybeSingle();
       if (existingRecordError) throw existingRecordError;
       if (!existingRecord) return NextResponse.json({ error: "Record not found in your assigned institution." }, { status: 404 });
-      if (existingRecord.record_type === "training") return NextResponse.json({ error: "Only Admin can change training publication or status." }, { status: 403 });
+      if (["training", "evaluation", "document", "activity", "test", "certificate"].includes(existingRecord.record_type)) return NextResponse.json({ error: "Only Admin can change this resource or its publication status." }, { status: 403 });
       const { data: record, error: updateError } = await client.from("nodal_portal_records")
         .update({ status, updated_at: new Date().toISOString() })
         .eq("id", recordId).in("institution_id", institutionIds).select("id,status").maybeSingle();
