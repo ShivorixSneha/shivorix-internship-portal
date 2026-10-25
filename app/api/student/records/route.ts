@@ -47,11 +47,21 @@ export async function GET(request: Request) {
       console.error("Student records query failed:", recordsResult.error?.message || attendanceResult.error?.message || applicationsResult.error?.message || submissionsResult.error?.message);
       return NextResponse.json({ error: "Student records could not be loaded." }, { status: 503 });
     }
+    const records = await Promise.all((recordsResult.data ?? []).map(async (record) => {
+      if (typeof record.resource_url !== "string" || !record.resource_url.startsWith("resources/")) return record;
+      const { data } = await client.storage.from("student-documents").createSignedUrl(record.resource_url, 3600);
+      return { ...record, resource_url: data?.signedUrl ?? null };
+    }));
+    const submissions = await Promise.all((submissionsResult.data ?? []).map(async (submission) => {
+      if (typeof submission.submission_url !== "string" || !submission.submission_url.startsWith("submissions/")) return submission;
+      const { data } = await client.storage.from("student-documents").createSignedUrl(submission.submission_url, 3600);
+      return { ...submission, submission_url: data?.signedUrl ?? null };
+    }));
     return NextResponse.json({
-      records: recordsResult.data ?? [],
+      records,
       attendance: attendanceResult.data ?? [],
       applications: applicationsResult.data ?? [],
-      submissions: submissionsResult.data ?? [],
+      submissions,
       notice: profile.college_id ? "" : "Your profile is not linked to an institution yet. Applications can still be tracked here.",
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
@@ -73,10 +83,13 @@ export async function POST(request: Request) {
     const recordId = typeof body.recordId === "string" ? body.recordId : "";
     const submissionUrl = typeof body.submissionUrl === "string" ? body.submissionUrl.trim().slice(0, 2048) : "";
     const submissionNote = typeof body.submissionNote === "string" ? body.submissionNote.trim().slice(0, 5000) : "";
-    if (!recordId || (!submissionUrl && !submissionNote)) return NextResponse.json({ error: "Add a submission link or a note before submitting." }, { status: 400 });
-    if (submissionUrl) {
+    if (!recordId || (!submissionUrl && !submissionNote)) return NextResponse.json({ error: "Attach a file, add a link, or write your answer before submitting." }, { status: 400 });
+    if (submissionUrl && !submissionUrl.startsWith("submissions/")) {
       try { const url = new URL(submissionUrl); if (!["https:", "http:"].includes(url.protocol)) throw new Error(); }
       catch { return NextResponse.json({ error: "Submission link must be a valid HTTP or HTTPS URL." }, { status: 400 }); }
+    }
+    if (submissionUrl.startsWith("submissions/") && !submissionUrl.startsWith("submissions/" + authData.user.id + "/")) {
+      return NextResponse.json({ error: "Uploaded file does not belong to your account." }, { status: 403 });
     }
     const { data: record, error: recordError } = await client.from("nodal_portal_records")
       .select("id,institution_id,student_id,record_type").eq("id", recordId).maybeSingle();
@@ -86,7 +99,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "This record is not available for submission from your account." }, { status: 403 });
     }
     if (record.record_type === "assignment") {
-      if (!submissionUrl) return NextResponse.json({ error: "Assignment submission URL is required." }, { status: 400 });
+      if (!submissionUrl && !submissionNote) return NextResponse.json({ error: "Attach a file, add an optional link, or write your assignment answer." }, { status: 400 });
       const { data: activeApplications, error: activeError } = await client.from("internship_applications")
         .select("id").eq("student_id", authData.user.id).not("activated_at", "is", null).limit(1);
       if (activeError) throw activeError;
