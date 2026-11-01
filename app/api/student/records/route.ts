@@ -95,7 +95,7 @@ export async function POST(request: Request) {
       .select("id,institution_id,student_id,record_type").eq("id", recordId).maybeSingle();
     if (recordError || !record || !profile.college_id || record.institution_id !== profile.college_id ||
         (record.student_id && record.student_id !== authData.user.id) ||
-        !["assignment","project","activity","test","evaluation"].includes(record.record_type)) {
+        !["assignment","project","activity","test","assessment","evaluation"].includes(record.record_type)) {
       return NextResponse.json({ error: "This record is not available for submission from your account." }, { status: 403 });
     }
     if (record.record_type === "assignment" || record.record_type === "project") {
