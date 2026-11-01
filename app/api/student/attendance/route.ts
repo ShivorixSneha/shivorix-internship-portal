@@ -2,6 +2,12 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
+
+function indiaDate(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const value = (key: string) => parts.find(part => part.type === key)?.value || "";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
 export async function POST(request: Request) {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -28,11 +34,11 @@ export async function POST(request: Request) {
     if (!activeApplication) return NextResponse.json({ eligible: false, message: "Attendance becomes available after your internship is activated." });
 
     const now = new Date();
-    const local = indiaTime(now);
+    const attendanceDate = indiaDate(now);
 
     const { data: existing, error: existingError } = await client.from("internship_attendance")
       .select("id,attendance_date,status,check_in_at,check_out_at,hours,application_id")
-      .eq("student_id", profile.id).eq("attendance_date", local.date).maybeSingle();
+      .eq("student_id", profile.id).eq("attendance_date", attendanceDate).maybeSingle();
     if (existingError) throw existingError;
     if (!existing?.check_in_at) return NextResponse.json({ error: "There is no open attendance check-in for today." }, { status: 409 });
     if (existing.check_out_at) return NextResponse.json({ error: "Today's attendance has already been checked out." }, { status: 409 });
