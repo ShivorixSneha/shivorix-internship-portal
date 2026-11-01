@@ -172,7 +172,7 @@ export async function POST(request: Request) {
       const institutionId = typeof body.institutionId === "string" ? body.institutionId : "";
       const dueDate = typeof body.dueDate === "string" && body.dueDate ? body.dueDate : null;
       const resourceUrl = typeof body.resourceUrl === "string" ? body.resourceUrl.trim() : "";
-      const allowedTypes = ["assignment", "project", "evaluation", "document", "notification", "training", "activity", "test", "certificate"];
+      const allowedTypes = ["assignment", "project", "assessment", "evaluation", "guideline", "document", "notification", "training", "activity", "test", "certificate"];
       if (!allowedTypes.includes(type) || title.length < 3 || title.length > 180 || description.length > 5000 || !institutionId) {
         return NextResponse.json({ error: "Choose a supported module, college, and valid title/description." }, { status: 400 });
       }
