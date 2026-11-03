@@ -30,16 +30,16 @@ export async function GET(request: Request) {
     const [profiles, colleges, internships, applications, profileCount, studentCount, collegeCount, internshipCount, activeInternshipCount, applicationCount, pendingCount, acceptedCount, rejectedCount] = await Promise.all([
       client.from("profiles")
         .select("id,role,full_name,email,college_id,institution_name,course,designation,employee_id,department,nodal_status,created_at")
-        .order("created_at", { ascending: false }).limit(500),
+        .order("created_at", { ascending: false }).limit(20000),
       client.from("colleges")
         .select("id,name,college_code,college_type,university_name,affiliation_code,website,official_email,official_phone,address_line,city,district,state,pin_code,status,created_by,nodal_officer_id,created_at,updated_at")
         .order("name"),
       client.from("internships")
         .select("id,title,description,mode,location,duration_weeks,fee_amount,is_active,published_at,created_at")
-        .order("created_at", { ascending: false }).limit(100),
+        .order("created_at", { ascending: false }).limit(20000),
       client.from("internship_applications")
         .select("id,application_number,student_id,internship_id,college_id,sector_id,mode,requested_hours,requested_credits,preferred_start_date,preferred_end_date,state,city,pin_code,full_address,nodal_review_status,review_remarks,status,applied_at,updated_at,profiles!internship_applications_student_id_fkey(full_name,email),internships(title),sectors(name),portal_documents(id,document_type,status,metadata)")
-        .order("applied_at", { ascending: false }).limit(100),
+        .order("applied_at", { ascending: false }).limit(20000),
       client.from("profiles").select("id", { count: "exact", head: true }),
       client.from("profiles").select("id", { count: "exact", head: true }).eq("role", "student"),
       client.from("colleges").select("id", { count: "exact", head: true }),
