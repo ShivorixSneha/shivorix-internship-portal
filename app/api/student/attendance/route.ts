@@ -2,13 +2,11 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
-function indiaTime(date: Date) {
-  const parts = new Intl.DateTimeFormat("en-GB", {
-    timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit",
-    weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23",
-  }).formatToParts(date);
+
+function indiaDate(date: Date) {
+  const parts = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
   const value = (key: string) => parts.find(part => part.type === key)?.value || "";
-  return { date: `${value("year")}-${value("month")}-${value("day")}`, weekday: value("weekday"), hour: Number(value("hour")), minute: Number(value("minute")) };
+  return `${value("year")}-${value("month")}-${value("day")}`;
 }
 export async function POST(request: Request) {
   try {
@@ -25,8 +23,8 @@ export async function POST(request: Request) {
     if (profileError || !profile || profile.role !== "student") return NextResponse.json({ error: "Student access required." }, { status: 403 });
     if (!profile.college_id) return NextResponse.json({ eligible: false, message: "Your student profile is not linked to a college yet." });
     const body = await request.json().catch(() => ({}));
-    const action = typeof body.action === "string" ? body.action : "auto_checkin";
-    if (!["auto_checkin", "check_out"].includes(action)) return NextResponse.json({ error: "Attendance action is invalid." }, { status: 400 });
+    const action = typeof body.action === "string" ? body.action : "";
+    if (action !== "check_out") return NextResponse.json({ error: "Attendance is maintained by your assigned Nodal Officer. Automatic student check-in is disabled." }, { status: 403 });
 
     const { data: activeApplications, error: activeError } = await client.from("internship_applications")
       .select("id,college_id,activated_at").eq("student_id", profile.id).eq("college_id", profile.college_id)
@@ -36,34 +34,11 @@ export async function POST(request: Request) {
     if (!activeApplication) return NextResponse.json({ eligible: false, message: "Attendance becomes available after your internship is activated." });
 
     const now = new Date();
-    const local = indiaTime(now);
-    if (action === "auto_checkin") {
-      if (local.weekday === "Sun") return NextResponse.json({ eligible: false, message: "Sunday attendance is closed." });
-      if (local.hour < 7 || local.hour > 23 || (local.hour === 23 && local.minute > 55)) {
-        return NextResponse.json({ eligible: false, message: "Attendance check-in is available from 7:00 AM to 11:55 PM, Monday through Saturday." });
-      }
-      const { data: existing, error: existingError } = await client.from("internship_attendance")
-        .select("id,attendance_date,status,check_in_at,check_out_at,hours,application_id")
-        .eq("student_id", profile.id).eq("attendance_date", local.date).maybeSingle();
-      if (existingError) throw existingError;
-      if (existing) return NextResponse.json({ eligible: true, created: false, attendance: existing, message: existing.check_in_at && !existing.check_out_at ? "Today's attendance is open. Check out when you finish." : "Today's attendance record already exists." });
-      const { data: attendance, error: insertError } = await client.from("internship_attendance").insert({
-        student_id: profile.id, institution_id: profile.college_id, application_id: activeApplication.id,
-        attendance_date: local.date, status: "present", notes: "Automatic check-in on student portal access",
-        marked_by: profile.id, check_in_at: now.toISOString(), hours: 0,
-      }).select("id,attendance_date,status,check_in_at,check_out_at,hours,application_id").single();
-      if (insertError) {
-        const { data: raced } = await client.from("internship_attendance").select("id,attendance_date,status,check_in_at,check_out_at,hours,application_id")
-          .eq("student_id", profile.id).eq("attendance_date", local.date).maybeSingle();
-        if (raced) return NextResponse.json({ eligible: true, created: false, attendance: raced, message: "Today's attendance record already exists." });
-        throw insertError;
-      }
-      return NextResponse.json({ eligible: true, created: true, attendance, message: "Attendance check-in recorded automatically." });
-    }
+    const attendanceDate = indiaDate(now);
 
     const { data: existing, error: existingError } = await client.from("internship_attendance")
       .select("id,attendance_date,status,check_in_at,check_out_at,hours,application_id")
-      .eq("student_id", profile.id).eq("attendance_date", local.date).maybeSingle();
+      .eq("student_id", profile.id).eq("attendance_date", attendanceDate).maybeSingle();
     if (existingError) throw existingError;
     if (!existing?.check_in_at) return NextResponse.json({ error: "There is no open attendance check-in for today." }, { status: 409 });
     if (existing.check_out_at) return NextResponse.json({ error: "Today's attendance has already been checked out." }, { status: 409 });
