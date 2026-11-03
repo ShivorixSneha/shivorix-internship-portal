@@ -21,6 +21,25 @@ async function requireAdmin(request: Request, client: ReturnType<typeof serviceC
   return data.user;
 }
 
+const ADMIN_APPLICATION_SELECT = "id,application_number,student_id,internship_id,college_id,sector_id,mode,requested_hours,requested_credits,preferred_start_date,preferred_end_date,state,city,pin_code,full_address,nodal_review_status,review_remarks,status,applied_at,updated_at,profiles!internship_applications_student_id_fkey(full_name,email),internships(title),sectors(name),portal_documents(id,document_type,status,metadata)";
+
+async function fetchAdminApplications(client: ReturnType<typeof serviceClient>) {
+  const pageSize = 1000;
+  const maxRows = 20000;
+  const rows: any[] = [];
+  for (let from = 0; from < maxRows; from += pageSize) {
+    const { data, error } = await client.from("internship_applications")
+      .select(ADMIN_APPLICATION_SELECT)
+      .order("applied_at", { ascending: false })
+      .range(from, from + pageSize - 1);
+    if (error) return { data: null, error };
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < pageSize) break;
+  }
+  return { data: rows, error: null };
+}
+
 export async function GET(request: Request) {
   try {
     const client = serviceClient();
@@ -37,9 +56,7 @@ export async function GET(request: Request) {
       client.from("internships")
         .select("id,title,description,mode,location,duration_weeks,fee_amount,is_active,published_at,created_at")
         .order("created_at", { ascending: false }).limit(100),
-      client.from("internship_applications")
-        .select("id,application_number,student_id,internship_id,college_id,sector_id,mode,requested_hours,requested_credits,preferred_start_date,preferred_end_date,state,city,pin_code,full_address,nodal_review_status,review_remarks,status,applied_at,updated_at,profiles!internship_applications_student_id_fkey(full_name,email),internships(title),sectors(name),portal_documents(id,document_type,status,metadata)")
-        .order("applied_at", { ascending: false }).limit(100),
+      fetchAdminApplications(client),
       client.from("profiles").select("id", { count: "exact", head: true }),
       client.from("profiles").select("id", { count: "exact", head: true }).eq("role", "student"),
       client.from("colleges").select("id", { count: "exact", head: true }),
@@ -94,7 +111,7 @@ export async function GET(request: Request) {
         acceptedApplications: acceptedCount.count ?? 0,
         rejectedApplications: rejectedCount.count ?? 0,
       },
-      limits: { profiles: 500, internships: 100, applications: 100 },
+      limits: { profiles: 500, internships: 100, applications: 20000, applicationsPagination: 1000 },
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Admin portal GET failed:", error);
