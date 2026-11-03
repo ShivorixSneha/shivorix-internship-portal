@@ -122,7 +122,7 @@ export default function StudentDashboard() {
           setSectorNames((selections || []).map((item: any) => item.sectors?.name).filter(Boolean));
           setStudentRecords((recordData.records ?? []) as StudentRecord[]);
           setStudentAttendance((recordData.attendance ?? []) as StudentAttendance[]);
-          setAttendanceNotice(attendanceMessage);
+          setAttendanceNotice(recordData.attendanceNotice || "Attendance is managed by your assigned Nodal Officer.");
           setStudentApplications((recordData.applications ?? []) as StudentApplication[]);
           setStudentSubmissions((recordData.submissions ?? []) as StudentSubmission[]);
           setRecordsNotice(recordData.notice || "");
