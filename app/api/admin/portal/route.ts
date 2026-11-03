@@ -89,10 +89,15 @@ export async function GET(request: Request) {
       console.error("Admin portal records query failed:", recordsError.message);
       return NextResponse.json({ error: "Learning records could not be loaded." }, { status: 503 });
     }
-    const { data: auditLogs, error: auditError } = await client.from("admin_audit_log")
+    const auditResult = await fetchAdminRows((from, to) => client.from("admin_audit_log")
       .select("id,actor_id,target_profile_id,action,old_value,new_value,details,created_at")
-      .order("created_at", { ascending: false }).limit(200);
-    if (auditError) console.error("Admin audit log query failed:", auditError.message);
+      .order("created_at", { ascending: false }).range(from, to));
+    const auditLogs = auditResult.data;
+    const auditError = auditResult.error;
+    if (auditError) {
+      console.error("Admin audit log query failed:", auditError.message);
+      return NextResponse.json({ error: "Audit logs could not be loaded. Check the audit table and permissions." }, { status: 503 });
+    }
     return NextResponse.json({
       records: await Promise.all((portalRecords ?? []).map(async (record: any) => {
         if (typeof record.resource_url !== "string" || !record.resource_url.startsWith("resources/")) return { ...record, resource_file_url: null };
@@ -251,6 +256,12 @@ export async function POST(request: Request) {
       console.error("Admin create institution failed:", error.message);
       return NextResponse.json({ error: "Could not create institution. Check the details and try again." }, { status: 400 });
     }
+    const { error: auditError } = await client.from("admin_audit_log").insert({
+      actor_id: user.id, action: "college_created", old_value: null,
+      new_value: { name, college_code: collegeCode, college_type: collegeType, university_name: university, city, state },
+      details: { college_id: data.id },
+    });
+    if (auditError) console.error("College creation audit failed:", auditError.message);
     return NextResponse.json({ success: true, id: data.id }, { status: 201, headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Admin portal POST failed:", error);
@@ -310,6 +321,12 @@ export async function PATCH(request: Request) {
       if (website && !(website.startsWith("https://") || website.startsWith("http://"))) return NextResponse.json({ error: "Website must start with http:// or https://." }, { status: 400 });
       const { data, error } = await client.from("colleges").update({ name, college_code: collegeCode, college_type: collegeType, university_name: university, affiliation_code: affiliationCode || null, website: website || null, official_email: officialEmail, official_phone: officialPhone, address_line: addressLine, city, district: city, state, pin_code: pinCode, updated_at: new Date().toISOString() }).eq("id", collegeId).select("id").maybeSingle();
       if (error || !data) return NextResponse.json({ error: "Institution details could not be updated." }, { status: 400 });
+      const { error: auditError } = await client.from("admin_audit_log").insert({
+        actor_id: user.id, action: "college_updated", old_value: null,
+        new_value: { name, college_code: collegeCode, college_type: collegeType, university_name: university, city, state },
+        details: { college_id: collegeId },
+      });
+      if (auditError) console.error("College update audit failed:", auditError.message);
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
 
@@ -326,6 +343,12 @@ export async function PATCH(request: Request) {
       if (feeAmount !== null && (!Number.isFinite(feeAmount) || feeAmount < 0 || feeAmount > 1000000)) return NextResponse.json({ error: "Fee must be between ₹0 and ₹10,00,000." }, { status: 400 });
       const { data, error } = await client.from("internships").update({ title, description, mode, location: location || null, duration_weeks: durationWeeks, fee_amount: feeAmount, updated_at: new Date().toISOString() }).eq("id", internshipId).select("id").maybeSingle();
       if (error || !data) return NextResponse.json({ error: "Internship details could not be updated." }, { status: 400 });
+      const { error: auditError } = await client.from("admin_audit_log").insert({
+        actor_id: user.id, action: "internship_updated", old_value: null,
+        new_value: { title, mode, location: location || null, duration_weeks: durationWeeks, fee_amount: feeAmount },
+        details: { internship_id: internshipId },
+      });
+      if (auditError) console.error("Internship update audit failed:", auditError.message);
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
 
@@ -336,6 +359,11 @@ export async function PATCH(request: Request) {
       if (body.isActive) patch.published_at = new Date().toISOString();
       const { data, error } = await client.from("internships").update(patch).eq("id", internshipId).select("id").maybeSingle();
       if (error || !data) return NextResponse.json({ error: "Internship publication status could not be updated." }, { status: 400 });
+      const { error: auditError } = await client.from("admin_audit_log").insert({
+        actor_id: user.id, action: body.isActive ? "internship_published" : "internship_unpublished",
+        old_value: null, new_value: { is_active: body.isActive }, details: { internship_id: internshipId },
+      });
+      if (auditError) console.error("Internship publication audit failed:", auditError.message);
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
 
