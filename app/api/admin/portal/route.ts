@@ -63,7 +63,7 @@ export async function GET(request: Request) {
     const mobileByUserId = new Map((authUsers.users ?? []).map((authUser) => [authUser.id, typeof authUser.user_metadata?.mobile_number === "string" ? authUser.user_metadata.mobile_number : null]));
     const { data: portalRecords, error: recordsError } = await client.from("nodal_portal_records")
       .select("id,record_type,title,description,due_date,resource_url,institution_id,student_id,status,created_at")
-      .order("created_at", { ascending: false }).limit(500);
+      .order("created_at", { ascending: false }).limit(20000);
     if (recordsError) {
       console.error("Admin portal records query failed:", recordsError.message);
       return NextResponse.json({ error: "Learning records could not be loaded." }, { status: 503 });
