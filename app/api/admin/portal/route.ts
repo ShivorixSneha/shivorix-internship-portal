@@ -3,6 +3,27 @@ import { createClient } from "@supabase/supabase-js";
 
 export const dynamic = "force-dynamic";
 
+const ADMIN_PAGE_SIZE = 1000;
+const ADMIN_MAX_ROWS = 20000;
+
+// Supabase projects can enforce a lower max_rows setting. Fetch bounded pages so
+// an Admin export does not silently stop at the first response page.
+async function fetchAdminRows<T>(
+  fetchPage: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: any }>,
+  maxRows = ADMIN_MAX_ROWS,
+) {
+  const rows: T[] = [];
+  for (let from = 0; from < maxRows; from += ADMIN_PAGE_SIZE) {
+    const to = Math.min(from + ADMIN_PAGE_SIZE - 1, maxRows - 1);
+    const { data, error } = await fetchPage(from, to);
+    if (error) return { data: null as T[] | null, error };
+    const page = data ?? [];
+    rows.push(...page);
+    if (page.length < to - from + 1) break;
+  }
+  return { data: rows, error: null };
+}
+
 function serviceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -28,18 +49,18 @@ export async function GET(request: Request) {
     if (!user) return NextResponse.json({ error: "Admin access required." }, { status: 403 });
 
     const [profiles, colleges, internships, applications, profileCount, studentCount, collegeCount, internshipCount, activeInternshipCount, applicationCount, pendingCount, acceptedCount, rejectedCount] = await Promise.all([
-      client.from("profiles")
+      fetchAdminRows((from, to) => client.from("profiles")
         .select("id,role,full_name,email,college_id,institution_name,course,designation,employee_id,department,nodal_status,created_at")
-        .order("created_at", { ascending: false }).limit(500),
-      client.from("colleges")
+        .order("created_at", { ascending: false }).range(from, to)),
+      fetchAdminRows((from, to) => client.from("colleges")
         .select("id,name,college_code,college_type,university_name,affiliation_code,website,official_email,official_phone,address_line,city,district,state,pin_code,status,created_by,nodal_officer_id,created_at,updated_at")
-        .order("name"),
-      client.from("internships")
+        .order("name").range(from, to)),
+      fetchAdminRows((from, to) => client.from("internships")
         .select("id,title,description,mode,location,duration_weeks,fee_amount,is_active,published_at,created_at")
-        .order("created_at", { ascending: false }).limit(100),
-      client.from("internship_applications")
+        .order("created_at", { ascending: false }).range(from, to)),
+      fetchAdminRows((from, to) => client.from("internship_applications")
         .select("id,application_number,student_id,internship_id,college_id,sector_id,mode,requested_hours,requested_credits,preferred_start_date,preferred_end_date,state,city,pin_code,full_address,nodal_review_status,review_remarks,status,applied_at,updated_at,profiles!internship_applications_student_id_fkey(full_name,email),internships(title),sectors(name),portal_documents(id,document_type,status,metadata)")
-        .order("applied_at", { ascending: false }).limit(100),
+        .order("applied_at", { ascending: false }).range(from, to)),
       client.from("profiles").select("id", { count: "exact", head: true }),
       client.from("profiles").select("id", { count: "exact", head: true }).eq("role", "student"),
       client.from("colleges").select("id", { count: "exact", head: true }),
@@ -61,9 +82,9 @@ export async function GET(request: Request) {
       return NextResponse.json({ error: "Officer contact details could not be loaded." }, { status: 503 });
     }
     const mobileByUserId = new Map((authUsers.users ?? []).map((authUser) => [authUser.id, typeof authUser.user_metadata?.mobile_number === "string" ? authUser.user_metadata.mobile_number : null]));
-    const { data: portalRecords, error: recordsError } = await client.from("nodal_portal_records")
+    const { data: portalRecords, error: recordsError } = await fetchAdminRows((from, to) => client.from("nodal_portal_records")
       .select("id,record_type,title,description,due_date,resource_url,institution_id,student_id,status,created_at")
-      .order("created_at", { ascending: false }).limit(500);
+      .order("created_at", { ascending: false }).range(from, to));
     if (recordsError) {
       console.error("Admin portal records query failed:", recordsError.message);
       return NextResponse.json({ error: "Learning records could not be loaded." }, { status: 503 });
@@ -94,7 +115,7 @@ export async function GET(request: Request) {
         acceptedApplications: acceptedCount.count ?? 0,
         rejectedApplications: rejectedCount.count ?? 0,
       },
-      limits: { profiles: 500, internships: 100, applications: 100 },
+      limits: { profiles: ADMIN_MAX_ROWS, colleges: ADMIN_MAX_ROWS, internships: ADMIN_MAX_ROWS, applications: ADMIN_MAX_ROWS, records: ADMIN_MAX_ROWS },
     }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     console.error("Admin portal GET failed:", error);
