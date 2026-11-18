@@ -40,8 +40,8 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const admin = adminClient();
-    const user = await authorizedStaff(request, admin);
-    if (!user) return NextResponse.json({ error: "Only authorized staff can publish internships." }, { status: 403 });
+    const user = await requireAdmin(request, admin);
+    if (!user) return NextResponse.json({ error: "Admin access required to publish internships." }, { status: 403 });
 
     const body = await request.json();
     const title = typeof body.title === "string" ? body.title.trim() : "";
