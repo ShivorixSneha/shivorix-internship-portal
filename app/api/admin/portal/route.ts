@@ -393,12 +393,21 @@ export async function PATCH(request: Request) {
       if (!id || !["submitted", "under_review", "accepted", "rejected", "withdrawn"].includes(status)) {
         return NextResponse.json({ error: "Application ID or status is invalid." }, { status: 400 });
       }
+      const { data: previous, error: previousError } = await client.from("internship_applications")
+        .select("id,student_id,status,application_number").eq("id", id).maybeSingle();
+      if (previousError || !previous) return NextResponse.json({ error: "Application not found." }, { status: 404 });
       const { data, error } = await client.from("internship_applications")
         .update({ status, nodal_review_status: status === "accepted" ? "approved" : status === "rejected" ? "rejected" : status === "under_review" ? "under_review" : "pending", ...(reviewRemarks === undefined ? {} : { review_remarks: reviewRemarks || null }), updated_at: new Date().toISOString() }).eq("id", id).select("id,status,application_number,nodal_review_status,review_remarks").maybeSingle();
       if (error || !data) {
         console.error("Admin application update failed:", error?.message || "record not found");
         return NextResponse.json({ error: "Application status could not be updated." }, { status: 400 });
       }
+      const { error: auditError } = await client.from("admin_audit_log").insert({
+        actor_id: user.id, target_profile_id: previous.student_id, action: "application_status_changed",
+        old_value: { status: previous.status }, new_value: { status },
+        details: { application_id: id, application_number: previous.application_number, review_remarks: reviewRemarks ?? null },
+      });
+      if (auditError) console.error("Admin application audit failed:", auditError.message);
       return NextResponse.json({ success: true, application: data }, { headers: { "Cache-Control": "no-store" } });
     }
 
@@ -417,6 +426,9 @@ export async function PATCH(request: Request) {
           return NextResponse.json({ error: "This Nodal Officer is already assigned to another college. Remove the existing assignment first." }, { status: 409 });
         }
       }
+      const { data: previousCollege, error: previousCollegeError } = await client.from("colleges")
+        .select("id,name,nodal_officer_id").eq("id", collegeId).maybeSingle();
+      if (previousCollegeError || !previousCollege) return NextResponse.json({ error: "Institution not found." }, { status: 404 });
       const { data, error } = await client.from("colleges")
         .update({ nodal_officer_id: officerId || null, updated_at: new Date().toISOString() })
         .eq("id", collegeId).select("id").maybeSingle();
@@ -424,6 +436,14 @@ export async function PATCH(request: Request) {
         console.error("Admin officer assignment failed:", error?.message || "institution not found");
         return NextResponse.json({ error: "Nodal Officer assignment could not be saved." }, { status: 400 });
       }
+      const { error: auditError } = await client.from("admin_audit_log").insert({
+        actor_id: user.id, target_profile_id: officerId || previousCollege.nodal_officer_id || null,
+        action: "college_nodal_officer_assignment_changed",
+        old_value: { nodal_officer_id: previousCollege.nodal_officer_id },
+        new_value: { nodal_officer_id: officerId || null },
+        details: { college_id: collegeId, college_name: previousCollege.name },
+      });
+      if (auditError) console.error("Nodal assignment audit failed:", auditError.message);
       return NextResponse.json({ success: true }, { headers: { "Cache-Control": "no-store" } });
     }
 
