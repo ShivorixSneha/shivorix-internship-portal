@@ -36,7 +36,7 @@ export async function GET(request: Request) {
     const institutionIds = (institutions ?? []).map((college) => college.id);
     const { data: students, error: studentsError } = institutionIds.length
       ? await client.from("profiles")
-          .select("id,role,full_name,email,phone,college_id,institution_name,course,current_semester,created_at")
+          .select("*")
           .eq("role", "student").in("college_id", institutionIds).order("created_at", { ascending: false }).limit(500)
       : { data: [], error: null };
     if (studentsError) throw studentsError;
