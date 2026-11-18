@@ -10,14 +10,14 @@ function adminClient() {
   return createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
 }
 
-async function authorizedStaff(request: Request, admin: ReturnType<typeof adminClient>) {
+async function requireAdmin(request: Request, admin: ReturnType<typeof adminClient>) {
   const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
   if (!token) return null;
   const { data, error } = await admin.auth.getUser(token);
   if (error || !data.user) return null;
   const { data: profile, error: profileError } = await admin
     .from("profiles").select("role").eq("id", data.user.id).maybeSingle();
-  if (profileError || !profile || !["admin", "nodal_officer"].includes(profile.role)) return null;
+  if (profileError || profile?.role !== "admin") return null;
   return data.user;
 }
 
