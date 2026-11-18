@@ -50,7 +50,7 @@ export async function GET(request: Request) {
 
     const [profiles, colleges, internships, applications, profileCount, studentCount, collegeCount, internshipCount, activeInternshipCount, applicationCount, pendingCount, acceptedCount, rejectedCount] = await Promise.all([
       fetchAdminRows((from, to) => client.from("profiles")
-        .select("id,role,full_name,email,college_id,institution_name,course,designation,employee_id,department,nodal_status,created_at")
+        .select("*")
         .order("created_at", { ascending: false }).range(from, to)),
       fetchAdminRows((from, to) => client.from("colleges")
         .select("id,name,college_code,college_type,university_name,affiliation_code,website,official_email,official_phone,address_line,city,district,state,pin_code,status,created_by,nodal_officer_id,created_at,updated_at")
